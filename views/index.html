@@ -39,6 +39,49 @@
             margin-bottom: 30px;
         }
 
+        /* ========== NOVOS ESTILOS ========== */
+        
+        /* Banner do Ganhador */
+        .ganhador-banner {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+
+        /* Rifa Bloqueada */
+        .rifa-bloqueada {
+            background: #f44336;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        /* Imagem da Rifa */
+        .imagem-rifa {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .imagem-rifa img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
         /* TABELA DE NÚMEROS */
         .numeros-table {
             width: 100%;
@@ -264,6 +307,15 @@
         <h1 id="nomeRifa">🎫 MEGA RIFA PREMIUM</h1>
         <div class="subtitle" id="descricaoRifa">🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆</div>
 
+        <!-- BANNER DO GANHADOR (aparece se houver sorteio) -->
+        <div id="ganhadorBanner"></div>
+
+        <!-- IMAGEM DA RIFA (upload do admin) -->
+        <div id="imagemRifa" class="imagem-rifa"></div>
+
+        <!-- AVISO DE RIFA BLOQUEADA (aparece se rifa estiver finalizada) -->
+        <div id="avisoBloqueio"></div>
+
         <!-- LEGENDA EXPLICATIVA -->
         <div class="legenda">
             <div class="legenda-item">
@@ -345,8 +397,9 @@
         let numeroSelecionado = null;
         let ultimaReserva = null;
         let configRifa = {};
+        let rifaAtiva = true;
 
-        // Carregar configurações da rifa
+        // ========== CARREGAR CONFIGURAÇÕES ==========
         function carregarConfiguracoes() {
             fetch('/api/configuracoes')
                 .then(res => res.json())
@@ -354,20 +407,77 @@
                     configRifa = config;
                     document.getElementById('nomeRifa').textContent = `🎫 ${config.nome_rifa || 'MEGA RIFA PREMIUM'}`;
                     document.getElementById('descricaoRifa').textContent = config.descricao_rifa || '🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆';
+                    
+                    // Verificar se rifa está ativa
+                    if (config.rifa_ativa === 'false') {
+                        rifaAtiva = false;
+                        document.getElementById('btnReservar').disabled = true;
+                        document.getElementById('btnReservar').textContent = '🔒 RIFA FINALIZADA - AGUARDE PRÓXIMA';
+                        document.getElementById('btnReservar').style.background = '#999';
+                        
+                        const aviso = document.getElementById('avisoBloqueio');
+                        aviso.innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada! Aguarde a próxima rifa para participar.</div>';
+                    }
+                    
+                    // Carregar imagem
+                    if (config.imagem_rifa && config.imagem_rifa !== '') {
+                        document.getElementById('imagemRifa').innerHTML = `<img src="${config.imagem_rifa}" alt="Imagem da Rifa">`;
+                    }
+                    
+                    // Aplicar cores personalizadas
+                    if (config.cor_principal) {
+                        const style = document.createElement('style');
+                        style.textContent = `
+                            .numero-item.disponivel {
+                                background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'});
+                            }
+                            .numero-selecionado {
+                                background: ${config.cor_principal};
+                            }
+                            button:not(.btn-whatsapp):not(.btn-fechar) {
+                                background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'});
+                            }
+                        `;
+                        document.head.appendChild(style);
+                    }
                 });
         }
 
-        // Carregar números do servidor
+        // ========== CARREGAR ÚLTIMO SORTEIO ==========
+        function carregarUltimoSorteio() {
+            fetch('/api/ultimo-sorteio')
+                .then(res => res.json())
+                .then(sorteio => {
+                    if (sorteio && sorteio.numero) {
+                        const banner = `
+                            <div class="ganhador-banner">
+                                🎉 ÚLTIMO GANHADOR! 🎉<br>
+                                <strong>Número ${sorteio.numero}</strong> - ${sorteio.ganhador_nome}<br>
+                                Sorteio realizado em ${new Date(sorteio.data_sorteio).toLocaleDateString()}
+                            </div>
+                        `;
+                        document.getElementById('ganhadorBanner').innerHTML = banner;
+                    }
+                });
+        }
+
+        // ========== CARREGAR NÚMEROS ==========
         function carregarNumeros() {
             fetch('/api/numeros')
                 .then(res => res.json())
                 .then(data => {
-                    numeros = data;
+                    numeros = data.numeros;
+                    rifaAtiva = data.rifa_ativa;
                     atualizarGrid();
+                    
+                    if (!rifaAtiva) {
+                        document.getElementById('btnReservar').disabled = true;
+                        document.getElementById('btnReservar').textContent = '🔒 RIFA FINALIZADA';
+                    }
                 });
         }
 
-        // Atualizar a tabela de números
+        // ========== ATUALIZAR GRID ==========
         function atualizarGrid() {
             const grid = document.getElementById('gridNumeros');
             grid.innerHTML = '';
@@ -377,16 +487,24 @@
                 div.className = `numero-item ${num.status}`;
                 div.textContent = num.numero;
                 
-                if (num.status === 'disponivel') {
+                if (num.status === 'disponivel' && rifaAtiva) {
                     div.onclick = () => selecionarNumero(num.numero);
+                } else if (num.status === 'disponivel' && !rifaAtiva) {
+                    div.style.cursor = 'not-allowed';
+                    div.style.opacity = '0.5';
                 }
                 
                 grid.appendChild(div);
             });
         }
 
-        // Selecionar número
+        // ========== SELECIONAR NÚMERO ==========
         function selecionarNumero(numero) {
+            if (!rifaAtiva) {
+                alert('⚠️ Esta rifa já foi finalizada!');
+                return;
+            }
+            
             numeroSelecionado = numero;
             document.getElementById('numeroSelecionadoTexto').textContent = numero;
             document.getElementById('btnReservar').disabled = false;
@@ -399,8 +517,13 @@
             });
         }
 
-        // Reservar número
+        // ========== RESERVAR NÚMERO ==========
         document.getElementById('btnReservar').onclick = () => {
+            if (!rifaAtiva) {
+                alert('⚠️ Esta rifa já foi finalizada! Não é possível comprar.');
+                return;
+            }
+            
             const nome = document.getElementById('nome').value;
             const telefone = document.getElementById('telefone').value;
             const email = document.getElementById('email').value;
@@ -430,7 +553,6 @@
                 if (data.success) {
                     ultimaReserva = data;
                     
-                    // Mostrar modal com comprovante
                     document.getElementById('modalNomeRifa').textContent = data.nome_rifa || configRifa.nome_rifa || 'MEGA RIFA';
                     document.getElementById('modalNumero').textContent = data.numero;
                     document.getElementById('modalValor').textContent = data.valor;
@@ -438,7 +560,6 @@
                     document.getElementById('modalQR').innerHTML = `<img src="${data.qrCode}" style="width: 150px;">`;
                     document.getElementById('modalPix').textContent = data.chave_pix;
                     
-                    // Montar mensagens do comprovante
                     let mensagensHtml = '';
                     if (data.mensagem_boas_vindas) {
                         mensagensHtml += `<p>📢 ${data.mensagem_boas_vindas}</p>`;
@@ -451,32 +572,24 @@
                     }
                     document.getElementById('mensagensComprovante').innerHTML = mensagensHtml;
                     
-                    // Configurar botão WhatsApp
                     const btnWhatsApp = document.getElementById('btnWhatsApp');
-                    const telefoneCliente = document.getElementById('telefone').value.replace(/\D/g, '');
+                    const adminWhatsApp = configRifa.admin_whatsapp || '55999999999';
                     
-                    // Buscar número do admin das configurações (ou usar padrão)
-                    const adminWhatsApp = configRifa.admin_whatsapp || '55999999999'; // Coloque o número do admin aqui
-                    
-                    // Mensagem automática para enviar ao ADMIN
                     const mensagemAdmin = `*NOVA RESERVA DE RIFA* 🎫%0A%0A` +
-                        `*Cliente:* ${document.getElementById('nome').value}%0A` +
-                        `*Telefone:* ${document.getElementById('telefone').value}%0A` +
-                        `*Email:* ${document.getElementById('email').value}%0A` +
+                        `*Cliente:* ${nome}%0A` +
+                        `*Telefone:* ${telefone}%0A` +
+                        `*Email:* ${email}%0A` +
                         `*Número:* ${data.numero}%0A` +
                         `*Valor:* R$ ${data.valor}%0A` +
-                        `*Código Comprovante:* ${data.comprovante}%0A%0A` +
-                        `🔗 *Link do comprovante:* ${data.qrCode}%0A%0A` +
+                        `*Código:* ${data.comprovante}%0A%0A` +
                         `✅ Aguardando confirmação de pagamento!`;
                     
                     btnWhatsApp.onclick = () => {
-                        const linkWhatsApp = `https://wa.me/55${adminWhatsApp}?text=${mensagemAdmin}`;
-                        window.open(linkWhatsApp, '_blank');
+                        window.open(`https://wa.me/55${adminWhatsApp}?text=${mensagemAdmin}`, '_blank');
                     };
                     
                     document.getElementById('modal').style.display = 'flex';
                     
-                    // Limpar formulário
                     document.getElementById('nome').value = '';
                     document.getElementById('telefone').value = '';
                     document.getElementById('email').value = '';
@@ -484,7 +597,6 @@
                     numeroSelecionado = null;
                     document.getElementById('btnReservar').disabled = true;
                     
-                    // Recarregar números
                     carregarNumeros();
                 } else {
                     alert('Erro: ' + data.error);
@@ -496,8 +608,9 @@
             document.getElementById('modal').style.display = 'none';
         }
 
-        // Inicializar
+        // ========== INICIALIZAR ==========
         carregarConfiguracoes();
+        carregarUltimoSorteio();
         carregarNumeros();
         setInterval(carregarNumeros, 5000);
     </script>
