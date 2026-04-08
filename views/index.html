@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mega Rifa - Escolha seu Número</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        /* TABELA DE NÚMEROS */
+        .numeros-table {
+            width: 100%;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .numeros-table h2 {
+            padding: 20px;
+            background: #f5f5f5;
+            margin: 0;
+        }
+
+        .grid-numeros {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .numero-item {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .numero-item.disponivel {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+            box-shadow: 0 2px 5px rgba(76,175,80,0.3);
+        }
+
+        .numero-item.reservado {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .numero-item.pago {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        .numero-item.disponivel:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(76,175,80,0.4);
+        }
+
+        .numero-item.selected {
+            box-shadow: 0 0 0 3px #ff9800, 0 5px 15px rgba(0,0,0,0.2);
+            transform: scale(1.05);
+        }
+
+        /* LEGENDA */
+        .legenda {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            flex-wrap: wrap;
+        }
+
+        .legenda-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .cor {
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+        }
+
+        .cor.disponivel { background: #4caf50; }
+        .cor.reservado { background: #ff9800; }
+        .cor.pago { background: #f44336; }
+
+        /* FORMULÁRIO */
+        .form-area {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .numero-selecionado {
+            background: #667eea;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 15px 0;
+            font-size: 1.2em;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .info-pagamento {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: left;
+        }
+
+        .btn-whatsapp {
+            background: #25D366;
+            margin-top: 10px;
+        }
+
+        .btn-whatsapp:hover {
+            background: #128C7E;
+        }
+
+        .btn-fechar {
+            background: #666;
+            margin-top: 10px;
+        }
+
+        .comprovante-texto {
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        @media (max-width: 768px) {
+            .grid-numeros {
+                grid-template-columns: repeat(5, 1fr);
+                gap: 8px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="nomeRifa">🎫 MEGA RIFA PREMIUM</h1>
+        <div class="subtitle" id="descricaoRifa">🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆</div>
+
+        <!-- LEGENDA EXPLICATIVA -->
+        <div class="legenda">
+            <div class="legenda-item">
+                <div class="cor disponivel"></div>
+                <span>Disponível</span>
+            </div>
+            <div class="legenda-item">
+                <div class="cor reservado"></div>
+                <span>Reservado (Aguardando Pagamento)</span>
+            </div>
+            <div class="legenda-item">
+                <div class="cor pago"></div>
+                <span>Pago (Confirmado)</span>
+            </div>
+        </div>
+
+        <!-- TABELA DE NÚMEROS -->
+        <div class="numeros-table">
+            <h2>📌 Escolha seu número da sorte</h2>
+            <div class="grid-numeros" id="gridNumeros">
+                <!-- Os números aparecerão aqui via JavaScript -->
+            </div>
+        </div>
+
+        <!-- ÁREA DE COMPRA -->
+        <div class="form-area">
+            <h3>📝 Finalizar Reserva</h3>
+            <div class="numero-selecionado">
+                Número Selecionado: <strong id="numeroSelecionadoTexto">Nenhum</strong>
+            </div>
+            
+            <div class="form-group">
+                <label>Nome completo</label>
+                <input type="text" id="nome" placeholder="Digite seu nome completo">
+            </div>
+            
+            <div class="form-group">
+                <label>WhatsApp (com DDD)</label>
+                <input type="tel" id="telefone" placeholder="(11) 99999-9999">
+            </div>
+            
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="email" placeholder="seu@email.com">
+            </div>
+            
+            <button id="btnReservar" disabled>🔒 Reservar Número</button>
+        </div>
+    </div>
+
+    <!-- MODAL DE COMPROVANTE COM WHATSAPP -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2>✅ Reserva Realizada!</h2>
+            <div class="info-pagamento">
+                <p><strong>🎫 Rifa:</strong> <span id="modalNomeRifa"></span></p>
+                <p><strong>🔢 Número:</strong> <span id="modalNumero"></span></p>
+                <p><strong>💰 Valor:</strong> R$ <span id="modalValor"></span></p>
+                <p><strong>📋 Código:</strong> <span id="modalCodigo" class="comprovante-texto"></span></p>
+                <div id="modalQR" style="margin: 15px 0; text-align: center;"></div>
+                <p><strong>📱 Chave PIX:</strong> <span id="modalPix"></span></p>
+                
+                <hr style="margin: 15px 0;">
+                
+                <div id="mensagensComprovante"></div>
+            </div>
+            
+            <p style="color: #f44336; font-weight: bold; margin: 10px 0;">
+                ⚠️ APÓS O PAGAMENTO, ENVIE O COMPROVANTE!
+            </p>
+            
+            <button id="btnWhatsApp" class="btn-whatsapp">📱 Enviar Comprovante via WhatsApp</button>
+            <button onclick="fecharModal()" class="btn-fechar">Fechar</button>
+        </div>
+    </div>
+
+    <script>
+        let numeros = [];
+        let numeroSelecionado = null;
+        let ultimaReserva = null;
+        let configRifa = {};
+
+        // Carregar configurações da rifa
+        function carregarConfiguracoes() {
+            fetch('/api/configuracoes')
+                .then(res => res.json())
+                .then(config => {
+                    configRifa = config;
+                    document.getElementById('nomeRifa').textContent = `🎫 ${config.nome_rifa || 'MEGA RIFA PREMIUM'}`;
+                    document.getElementById('descricaoRifa').textContent = config.descricao_rifa || '🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆';
+                });
+        }
+
+        // Carregar números do servidor
+        function carregarNumeros() {
+            fetch('/api/numeros')
+                .then(res => res.json())
+                .then(data => {
+                    numeros = data;
+                    atualizarGrid();
+                });
+        }
+
+        // Atualizar a tabela de números
+        function atualizarGrid() {
+            const grid = document.getElementById('gridNumeros');
+            grid.innerHTML = '';
+            
+            numeros.forEach(num => {
+                const div = document.createElement('div');
+                div.className = `numero-item ${num.status}`;
+                div.textContent = num.numero;
+                
+                if (num.status === 'disponivel') {
+                    div.onclick = () => selecionarNumero(num.numero);
+                }
+                
+                grid.appendChild(div);
+            });
+        }
+
+        // Selecionar número
+        function selecionarNumero(numero) {
+            numeroSelecionado = numero;
+            document.getElementById('numeroSelecionadoTexto').textContent = numero;
+            document.getElementById('btnReservar').disabled = false;
+            
+            document.querySelectorAll('.numero-item').forEach(el => {
+                el.classList.remove('selected');
+                if (el.textContent == numero) {
+                    el.classList.add('selected');
+                }
+            });
+        }
+
+        // Reservar número
+        document.getElementById('btnReservar').onclick = () => {
+            const nome = document.getElementById('nome').value;
+            const telefone = document.getElementById('telefone').value;
+            const email = document.getElementById('email').value;
+            
+            if (!nome || !telefone || !email) {
+                alert('⚠️ Preencha todos os campos!');
+                return;
+            }
+            
+            if (!numeroSelecionado) {
+                alert('⚠️ Selecione um número!');
+                return;
+            }
+            
+            fetch('/api/reservar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    numero: numeroSelecionado,
+                    nome: nome,
+                    telefone: telefone,
+                    email: email
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    ultimaReserva = data;
+                    
+                    // Mostrar modal com comprovante
+                    document.getElementById('modalNomeRifa').textContent = data.nome_rifa || configRifa.nome_rifa || 'MEGA RIFA';
+                    document.getElementById('modalNumero').textContent = data.numero;
+                    document.getElementById('modalValor').textContent = data.valor;
+                    document.getElementById('modalCodigo').textContent = data.comprovante;
+                    document.getElementById('modalQR').innerHTML = `<img src="${data.qrCode}" style="width: 150px;">`;
+                    document.getElementById('modalPix').textContent = data.chave_pix;
+                    
+                    // Montar mensagens do comprovante
+                    let mensagensHtml = '';
+                    if (data.mensagem_boas_vindas) {
+                        mensagensHtml += `<p>📢 ${data.mensagem_boas_vindas}</p>`;
+                    }
+                    if (data.instrucoes_pagamento) {
+                        mensagensHtml += `<p>📝 ${data.instrucoes_pagamento.replace(/\n/g, '<br>')}</p>`;
+                    }
+                    if (data.rodape_comprovante) {
+                        mensagensHtml += `<p>✨ ${data.rodape_comprovante.replace(/\n/g, '<br>')}</p>`;
+                    }
+                    document.getElementById('mensagensComprovante').innerHTML = mensagensHtml;
+                    
+                    // Configurar botão WhatsApp
+                    const btnWhatsApp = document.getElementById('btnWhatsApp');
+                    const telefoneCliente = document.getElementById('telefone').value.replace(/\D/g, '');
+                    
+                    // Buscar número do admin das configurações (ou usar padrão)
+                    const adminWhatsApp = configRifa.admin_whatsapp || '55999999999'; // Coloque o número do admin aqui
+                    
+                    // Mensagem automática para enviar ao ADMIN
+                    const mensagemAdmin = `*NOVA RESERVA DE RIFA* 🎫%0A%0A` +
+                        `*Cliente:* ${document.getElementById('nome').value}%0A` +
+                        `*Telefone:* ${document.getElementById('telefone').value}%0A` +
+                        `*Email:* ${document.getElementById('email').value}%0A` +
+                        `*Número:* ${data.numero}%0A` +
+                        `*Valor:* R$ ${data.valor}%0A` +
+                        `*Código Comprovante:* ${data.comprovante}%0A%0A` +
+                        `🔗 *Link do comprovante:* ${data.qrCode}%0A%0A` +
+                        `✅ Aguardando confirmação de pagamento!`;
+                    
+                    btnWhatsApp.onclick = () => {
+                        const linkWhatsApp = `https://wa.me/55${adminWhatsApp}?text=${mensagemAdmin}`;
+                        window.open(linkWhatsApp, '_blank');
+                    };
+                    
+                    document.getElementById('modal').style.display = 'flex';
+                    
+                    // Limpar formulário
+                    document.getElementById('nome').value = '';
+                    document.getElementById('telefone').value = '';
+                    document.getElementById('email').value = '';
+                    document.getElementById('numeroSelecionadoTexto').textContent = 'Nenhum';
+                    numeroSelecionado = null;
+                    document.getElementById('btnReservar').disabled = true;
+                    
+                    // Recarregar números
+                    carregarNumeros();
+                } else {
+                    alert('Erro: ' + data.error);
+                }
+            });
+        };
+
+        function fecharModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // Inicializar
+        carregarConfiguracoes();
+        carregarNumeros();
+        setInterval(carregarNumeros, 5000);
+    </script>
+</body>
+</html>
