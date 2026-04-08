@@ -17,7 +17,7 @@ app.use(express.static('views'));
 // ============================================
 // BANCO DE DADOS SQLITE
 // ============================================
-const db = new sqlite3.Database('rifa.db');
+const db = new sqlite3.Database('/home/u1234567/domains/seu-dominio/public_html/rifa.db');
 
 // Criar tabelas
 db.serialize(() => {
