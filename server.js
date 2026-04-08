@@ -495,6 +495,8 @@ app.get('/admin', (req, res) => {
 // INICIAR SERVIDOR
 // ============================================
 app.listen(port, () => {
+  console.log(`Servidor rodando na porta ${port}`);
+});
   console.log('='.repeat(50));
   console.log('🚀 SISTEMA DE RIFA - SERVIDOR RODANDO');
   console.log('='.repeat(50));
