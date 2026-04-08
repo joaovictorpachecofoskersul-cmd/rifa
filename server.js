@@ -7,7 +7,7 @@ const QRCode = require('qrcode');
 const path = require('path');
 
 const app = express();
-const port = process.env.PORT || 3000; 
+const PORT = process.env.PORT || 3000;
 
 // Middlewares
 app.use(cors());
@@ -15,9 +15,16 @@ app.use(bodyParser.json());
 app.use(express.static('views'));
 
 // ============================================
-// BANCO DE DADOS SQLITE
+// BANCO DE DADOS SQLITE (NÃO PRECISA DE CREDENCIAIS!)
 // ============================================
-const db = new sqlite3.Database('/home/u1234567/domains/seu-dominio/public_html/rifa.db');
+// O SQLite cria automaticamente o arquivo rifa.db na pasta do projeto
+const db = new sqlite3.Database('rifa.db', (err) => {
+  if (err) {
+    console.error('Erro ao conectar ao banco:', err.message);
+  } else {
+    console.log('✅ Banco de dados SQLite conectado com sucesso');
+  }
+});
 
 // Criar tabelas
 db.serialize(() => {
@@ -85,7 +92,7 @@ db.serialize(() => {
     descricao_rifa: '🏆 Prêmio: R$ 10.000,00 + Moto 0km',
     valor_rifa: '10.00',
     chave_pix: 'admin@rifa.com',
-    admin_whatsapp: '65992270913',
+    admin_whatsapp: '55999999999',
     mensagem_boas_vindas: 'Obrigado por participar da nossa rifa!',
     instrucoes_pagamento: '1. Faça o PIX para a chave acima\n2. Envie o comprovante para o administrador\n3. Aguarde a confirmação',
     rodape_comprovante: 'Boa sorte! 🍀\nSorteio ao atingir 100 números vendidos',
@@ -112,7 +119,7 @@ app.get('/api/numeros', (req, res) => {
   });
 });
 
-// Buscar configurações públicas (para o cliente)
+// Buscar configurações públicas
 app.get('/api/configuracoes', (req, res) => {
   db.all(`SELECT chave, valor FROM configuracoes WHERE chave IN ('nome_rifa', 'descricao_rifa', 'valor_rifa', 'chave_pix', 'admin_whatsapp', 'mensagem_boas_vindas', 'instrucoes_pagamento', 'rodape_comprovante')`, (err, rows) => {
     if (err) {
@@ -130,19 +137,16 @@ app.get('/api/configuracoes', (req, res) => {
 app.post('/api/reservar', async (req, res) => {
   const { numero, nome, telefone, email } = req.body;
 
-  // Validação dos campos
   if (!numero || !nome || !telefone || !email) {
     return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
   }
 
-  // Buscar valor da rifa e chave PIX nas configurações
   db.get(`SELECT valor FROM configuracoes WHERE chave = 'valor_rifa'`, async (err, valorRow) => {
     const valorRifa = valorRow ? parseFloat(valorRow.valor) : 10.00;
     
     db.get(`SELECT valor FROM configuracoes WHERE chave = 'chave_pix'`, async (err, pixRow) => {
       const chavePix = pixRow ? pixRow.valor : 'admin@rifa.com';
       
-      // Verificar se número está disponível
       db.get(`SELECT status FROM numeros WHERE numero = ?`, [numero], async (err, row) => {
         if (err) {
           return res.status(500).json({ error: err.message });
@@ -152,18 +156,13 @@ app.post('/api/reservar', async (req, res) => {
           return res.status(400).json({ error: 'Número já reservado ou vendido' });
         }
 
-        // Gerar comprovante único
         const comprovanteId = uuidv4();
         const comprovanteCodigo = `RIFA-${numero}-${comprovanteId.slice(0, 8)}`.toUpperCase();
-        
-        // Gerar QR Code
         const qrCodeDataUrl = await QRCode.toDataURL(comprovanteCodigo);
         
-        // Iniciar transação
         db.serialize(() => {
           db.run(`BEGIN TRANSACTION`);
           
-          // Atualizar número como reservado
           db.run(`
             UPDATE numeros 
             SET status = 'reservado',
@@ -175,7 +174,6 @@ app.post('/api/reservar', async (req, res) => {
             WHERE numero = ?
           `, [nome, telefone, email, comprovanteCodigo, numero]);
           
-          // Inserir venda pendente
           db.run(`
             INSERT INTO vendas (id, numero, nome, telefone, email, comprovante_codigo, qr_code, valor_pago, status_pagamento)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pendente')
@@ -187,7 +185,6 @@ app.post('/api/reservar', async (req, res) => {
               return res.status(500).json({ error: 'Erro ao processar reserva' });
             }
             
-            // Buscar mensagens do comprovante
             db.get(`SELECT valor FROM configuracoes WHERE chave = 'mensagem_boas_vindas'`, (err, boasVindasRow) => {
               db.get(`SELECT valor FROM configuracoes WHERE chave = 'instrucoes_pagamento'`, (err, instrucoesRow) => {
                 db.get(`SELECT valor FROM configuracoes WHERE chave = 'rodape_comprovante'`, (err, rodapeRow) => {
@@ -241,7 +238,6 @@ app.get('/api/verificar/:codigo', (req, res) => {
 // ROTAS ADMINISTRATIVAS
 // ============================================
 
-// Dashboard - Estatísticas
 app.get('/api/admin/dashboard', (req, res) => {
   db.get(`
     SELECT 
@@ -259,7 +255,6 @@ app.get('/api/admin/dashboard', (req, res) => {
   });
 });
 
-// Listar todas vendas pendentes (admin)
 app.get('/api/admin/vendas', (req, res) => {
   db.all(`
     SELECT v.*, n.status as numero_status
@@ -275,7 +270,6 @@ app.get('/api/admin/vendas', (req, res) => {
   });
 });
 
-// Listar todos números com detalhes (admin)
 app.get('/api/admin/numeros', (req, res) => {
   db.all(`
     SELECT n.*, v.comprovante_codigo, v.data_pedido, v.status_pagamento
@@ -290,7 +284,6 @@ app.get('/api/admin/numeros', (req, res) => {
   });
 });
 
-// Confirmar pagamento
 app.post('/api/admin/confirmar-pagamento', (req, res) => {
   const { venda_id, numero } = req.body;
   
@@ -301,7 +294,6 @@ app.post('/api/admin/confirmar-pagamento', (req, res) => {
   db.serialize(() => {
     db.run(`BEGIN TRANSACTION`);
     
-    // Atualizar venda
     db.run(`
       UPDATE vendas 
       SET status_pagamento = 'confirmado',
@@ -309,7 +301,6 @@ app.post('/api/admin/confirmar-pagamento', (req, res) => {
       WHERE id = ?
     `, [venda_id]);
     
-    // Atualizar número
     db.run(`
       UPDATE numeros 
       SET status = 'pago',
@@ -322,12 +313,11 @@ app.post('/api/admin/confirmar-pagamento', (req, res) => {
         db.run(`ROLLBACK`);
         return res.status(500).json({ error: 'Erro ao confirmar pagamento' });
       }
-      res.json({ success: true, message: 'Pagamento confirmado com sucesso!' });
+      res.json({ success: true });
     });
   });
 });
 
-// Cancelar venda
 app.post('/api/admin/cancelar-venda', (req, res) => {
   const { venda_id, numero } = req.body;
   
@@ -338,14 +328,12 @@ app.post('/api/admin/cancelar-venda', (req, res) => {
   db.serialize(() => {
     db.run(`BEGIN TRANSACTION`);
     
-    // Cancelar venda
     db.run(`
       UPDATE vendas 
       SET status_pagamento = 'cancelado'
       WHERE id = ?
     `, [venda_id]);
     
-    // Liberar número
     db.run(`
       UPDATE numeros 
       SET status = 'disponivel',
@@ -362,23 +350,15 @@ app.post('/api/admin/cancelar-venda', (req, res) => {
         db.run(`ROLLBACK`);
         return res.status(500).json({ error: 'Erro ao cancelar venda' });
       }
-      res.json({ success: true, message: 'Venda cancelada e número liberado!' });
+      res.json({ success: true });
     });
   });
 });
 
-// Exportar dados (vendas confirmadas)
 app.get('/api/admin/exportar', (req, res) => {
   db.all(`
     SELECT 
-      numero,
-      nome,
-      telefone,
-      email,
-      valor_pago,
-      data_pedido,
-      data_pagamento,
-      comprovante_codigo
+      numero, nome, telefone, email, valor_pago, data_pedido, data_pagamento, comprovante_codigo
     FROM vendas 
     WHERE status_pagamento = 'confirmado'
     ORDER BY numero
@@ -394,9 +374,7 @@ app.get('/api/admin/exportar', (req, res) => {
 // ROTAS DE SORTEIO
 // ============================================
 
-// Realizar sorteio
 app.post('/api/admin/sortear', (req, res) => {
-  // Buscar números pagos
   db.all(`SELECT numero, comprador_nome, comprador_telefone, comprador_email, data_confirmacao 
           FROM numeros 
           WHERE status = 'pago'`, (err, pagos) => {
@@ -408,10 +386,8 @@ app.post('/api/admin/sortear', (req, res) => {
       return res.status(400).json({ error: 'Não há números pagos para sortear!' });
     }
     
-    // Escolher número aleatório
     const sorteado = pagos[Math.floor(Math.random() * pagos.length)];
     
-    // Salvar no histórico
     db.run(`
       INSERT INTO sorteios (numero, ganhador_nome, ganhador_telefone, ganhador_email, data_sorteio)
       VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
@@ -428,7 +404,6 @@ app.post('/api/admin/sortear', (req, res) => {
   });
 });
 
-// Buscar histórico de sorteios
 app.get('/api/admin/historico-sorteios', (req, res) => {
   db.all(`SELECT * FROM sorteios ORDER BY data_sorteio DESC`, (err, rows) => {
     if (err) {
@@ -439,10 +414,9 @@ app.get('/api/admin/historico-sorteios', (req, res) => {
 });
 
 // ============================================
-// ROTAS DE CONFIGURAÇÃO (ADMIN)
+// ROTAS DE CONFIGURAÇÃO
 // ============================================
 
-// Buscar todas configurações
 app.get('/api/admin/configuracoes', (req, res) => {
   db.all(`SELECT chave, valor FROM configuracoes`, (err, rows) => {
     if (err) {
@@ -456,7 +430,6 @@ app.get('/api/admin/configuracoes', (req, res) => {
   });
 });
 
-// Salvar configurações
 app.post('/api/admin/configuracoes', (req, res) => {
   const config = req.body;
   
@@ -481,7 +454,7 @@ app.post('/api/admin/configuracoes', (req, res) => {
 });
 
 // ============================================
-// SERVIDOR ESTÁTICO PARA ARQUIVOS HTML
+// SERVIDOR ESTÁTICO
 // ============================================
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'index.html'));
@@ -494,29 +467,22 @@ app.get('/admin', (req, res) => {
 // ============================================
 // INICIAR SERVIDOR
 // ============================================
-app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port}`);
-});
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('='.repeat(50));
   console.log('🚀 SISTEMA DE RIFA - SERVIDOR RODANDO');
   console.log('='.repeat(50));
-  console.log(`📱 Site do Cliente: http://localhost:${port}`);
-  console.log(`👨‍💼 Painel Admin: http://localhost:${port}/admin`);
-  console.log(`💾 Banco de Dados: rifa.db (SQLite)`);
+  console.log(`📱 Site do Cliente: http://localhost:${PORT}`);
+  console.log(`👨‍💼 Painel Admin: http://localhost:${PORT}/admin`);
+  console.log(`💾 Banco de Dados: SQLite (rifa.db)`);
   console.log('='.repeat(50));
-  console.log('\n✅ Status:');
-  console.log('- API REST disponível');
-  console.log('- Banco de dados inicializado');
-  console.log('- Números 1 a 100 criados');
-  console.log('- Configurações padrão carregadas');
-  console.log('- WhatsApp do admin configurado');
-  console.log('- Sistema de sorteio ativado');
-  console.log('- Aguardando conexões...\n');
 });
 
-// ============================================
-// TRATAMENTO DE ERROS
-// ============================================
+server.on('error', (err) => {
+  console.error('❌ Erro no servidor:', err);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Porta ${PORT} já está em uso`);
+  }
+});
 
 // Fechar conexão com banco ao encerrar
 process.on('SIGINT', () => {
