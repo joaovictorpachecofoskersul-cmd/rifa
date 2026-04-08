@@ -42,13 +42,20 @@ const upload = multer({
 });
 
 // ============================================
-// BANCO DE DADOS SQLITE - CORRIGIDO PARA HOSTINGER
+// BANCO DE DADOS SQLITE - VERSÃO SIMPLIFICADA
 // ============================================
-// Em produção (Hostinger), usa /tmp/ que tem permissão de escrita
-const isProduction = process.env.NODE_ENV === 'production' || process.env.HOSTINGER === 'true';
-const dbPath = isProduction ? '/tmp/rifa.db' : 'rifa.db';
-const db = new sqlite3.Database(dbPath);
+// Tenta usar /tmp/ se existir (Hostinger), senão usa local
+let dbPath = 'rifa.db';
+try {
+    // Testa se /tmp/ tem permissão de escrita
+    fs.accessSync('/tmp/', fs.constants.W_OK);
+    dbPath = '/tmp/rifa.db';
+    console.log('📁 Usando /tmp/ para o banco de dados');
+} catch (err) {
+    console.log('📁 Usando diretório local para o banco de dados');
+}
 
+const db = new sqlite3.Database(dbPath);
 console.log(`📁 Banco de dados: ${dbPath}`);
 
 // Criar tabelas
@@ -108,8 +115,11 @@ db.serialize(() => {
 
     // Verificar se já existem números
     db.get(`SELECT COUNT(*) as total FROM numeros`, (err, row) => {
-        if (row && row.total === 0) {
+        if (err) {
+            console.error('Erro ao verificar números:', err.message);
+        } else if (row && row.total === 0) {
             // Inicializar números 1 a 100
+            console.log('📝 Inicializando números 1 a 100...');
             for (let i = 1; i <= 100; i++) {
                 db.run(`INSERT INTO numeros (numero, status) VALUES (?, 'disponivel')`, [i]);
             }
@@ -117,7 +127,7 @@ db.serialize(() => {
         }
     });
 
-    // Configurações padrão (usando INSERT OR IGNORE para não sobrescrever)
+    // Configurações padrão
     const configuracoesPadrao = {
         nome_rifa: 'MEGA RIFA PREMIUM',
         descricao_rifa: '🏆 Prêmio: R$ 10.000,00 + Moto 0km',
@@ -275,7 +285,7 @@ app.post('/api/reservar', async (req, res) => {
 });
 
 // ============================================
-// ROTAS ADMINISTRATIVAS (resumidas para caber)
+// ROTAS ADMINISTRATIVAS
 // ============================================
 
 app.get('/api/admin/dashboard', (req, res) => {
