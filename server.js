@@ -14,108 +14,131 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'views')));
 
 // ============================================
-// 🔴 CONFIGURAÇÃO DO BANCO - COLOQUE SUA SENHA AQUI!
+// CONFIGURAÇÃO DO BANCO - CORRIGIDA PARA HOSTINGER
 // ============================================
 const DB_CONFIG = {
-   host: '127.0.0.1',  // ou 'mysql.hostinger.com',
+    host: 'localhost',  // Na Hostinger, use 'localhost' quando o MySQL está no mesmo plano
     user: 'u519611382_rifa',
-    password: '21@Brasil21',  // 🔴🔴🔴 MUDE AQUI 🔴🔴🔴
+    password: '21@Brasil21',
     database: 'u519611382_rifa',
     waitForConnections: true,
-    connectionLimit: 10
+    connectionLimit: 5,
+    connectTimeout: 10000
 };
 
 let pool;
+let dbConnected = false;
 
 // ============================================
 // INICIALIZAR BANCO DE DADOS
 // ============================================
 async function initDatabase() {
-    pool = mysql.createPool(DB_CONFIG);
-    
-    const connection = await pool.getConnection();
-    
-    // Criar tabela de configurações
-    await connection.execute(`
-        CREATE TABLE IF NOT EXISTS configuracoes (
-            id INT PRIMARY KEY DEFAULT 1,
-            nome_rifa VARCHAR(255) DEFAULT 'MEGA RIFA PREMIUM',
-            descricao_rifa TEXT DEFAULT '🏆 Prêmio: R$ 10.000,00 + Moto 0km',
-            valor_rifa DECIMAL(10,2) DEFAULT 10.00,
-            chave_pix VARCHAR(255) DEFAULT 'admin@rifa.com',
-            admin_whatsapp VARCHAR(50) DEFAULT '55999999999',
-            rifa_ativa VARCHAR(10) DEFAULT 'true',
-            ultimo_ganhador VARCHAR(255) DEFAULT '',
-            ultimo_ganhador_numero VARCHAR(50) DEFAULT '',
-            imagem_rifa TEXT,
-            cor_principal VARCHAR(50) DEFAULT '#667eea',
-            cor_secundaria VARCHAR(50) DEFAULT '#764ba2',
-            mensagem_boas_vindas TEXT DEFAULT 'Obrigado por participar da nossa rifa!',
-            instrucoes_pagamento TEXT DEFAULT '1. Faça o PIX para a chave acima\\n2. Envie o comprovante\\n3. Aguarde a confirmação',
-            rodape_comprovante TEXT DEFAULT 'Boa sorte! 🍀\\nSorteio ao atingir 100 números',
-            mensagem_whatsapp TEXT DEFAULT 'Olá {nome}!\\n✅ Pagamento CONFIRMADO!\\nNúmero: {numero}\\nBoa sorte! 🍀',
-            mensagem_ganhador TEXT DEFAULT '🎉 PARABÉNS {nome}!\\nNúmero: {numero}\\nEntre em contato! 🏆'
-        )
-    `);
-    
-    // Criar tabela de números
-    await connection.execute(`
-        CREATE TABLE IF NOT EXISTS numeros (
-            numero INT PRIMARY KEY,
-            status ENUM('disponivel', 'reservado', 'pago') DEFAULT 'disponivel',
-            comprador_nome VARCHAR(255),
-            comprador_telefone VARCHAR(50),
-            comprador_email VARCHAR(255),
-            comprovante_codigo VARCHAR(100),
-            data_reserva DATETIME,
-            data_confirmacao DATETIME
-        )
-    `);
-    
-    // Criar tabela de vendas
-    await connection.execute(`
-        CREATE TABLE IF NOT EXISTS vendas (
-            id VARCHAR(100) PRIMARY KEY,
-            numero INT,
-            nome VARCHAR(255),
-            telefone VARCHAR(50),
-            email VARCHAR(255),
-            comprovante_codigo VARCHAR(100),
-            qr_code TEXT,
-            status_pagamento ENUM('pendente', 'confirmado', 'cancelado') DEFAULT 'pendente',
-            valor_pago DECIMAL(10,2),
-            data_pedido DATETIME,
-            data_pagamento DATETIME
-        )
-    `);
-    
-    // Criar tabela de sorteios
-    await connection.execute(`
-        CREATE TABLE IF NOT EXISTS sorteios (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            numero INT,
-            ganhador_nome VARCHAR(255),
-            ganhador_telefone VARCHAR(50),
-            ganhador_email VARCHAR(255),
-            data_sorteio DATETIME
-        )
-    `);
-    
-    // Inserir números de 1 a 100
-    for (let i = 1; i <= 100; i++) {
+    try {
+        console.log('🔄 Conectando ao MySQL...');
+        pool = mysql.createPool(DB_CONFIG);
+        
+        // Testar conexão
+        const connection = await pool.getConnection();
+        console.log('✅ MySQL conectado!');
+        
+        // Criar tabela de configurações
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS configuracoes (
+                id INT PRIMARY KEY DEFAULT 1,
+                nome_rifa VARCHAR(255) DEFAULT 'MEGA RIFA PREMIUM',
+                descricao_rifa TEXT DEFAULT '🏆 Prêmio: R$ 10.000,00 + Moto 0km',
+                valor_rifa DECIMAL(10,2) DEFAULT 10.00,
+                chave_pix VARCHAR(255) DEFAULT 'admin@rifa.com',
+                admin_whatsapp VARCHAR(50) DEFAULT '55999999999',
+                rifa_ativa VARCHAR(10) DEFAULT 'true',
+                ultimo_ganhador VARCHAR(255) DEFAULT '',
+                ultimo_ganhador_numero VARCHAR(50) DEFAULT '',
+                imagem_rifa TEXT,
+                cor_principal VARCHAR(50) DEFAULT '#667eea',
+                cor_secundaria VARCHAR(50) DEFAULT '#764ba2',
+                mensagem_boas_vindas TEXT DEFAULT 'Obrigado por participar da nossa rifa!',
+                instrucoes_pagamento TEXT DEFAULT '1. Faça o PIX para a chave acima\\n2. Envie o comprovante\\n3. Aguarde a confirmação',
+                rodape_comprovante TEXT DEFAULT 'Boa sorte! 🍀\\nSorteio ao atingir 100 números',
+                mensagem_whatsapp TEXT DEFAULT 'Olá {nome}!\\n✅ Pagamento CONFIRMADO!\\nNúmero: {numero}\\nBoa sorte! 🍀',
+                mensagem_ganhador TEXT DEFAULT '🎉 PARABÉNS {nome}!\\nNúmero: {numero}\\nEntre em contato! 🏆'
+            )
+        `);
+        
+        // Criar tabela de números
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS numeros (
+                numero INT PRIMARY KEY,
+                status ENUM('disponivel', 'reservado', 'pago') DEFAULT 'disponivel',
+                comprador_nome VARCHAR(255),
+                comprador_telefone VARCHAR(50),
+                comprador_email VARCHAR(255),
+                comprovante_codigo VARCHAR(100),
+                data_reserva DATETIME,
+                data_confirmacao DATETIME
+            )
+        `);
+        
+        // Criar tabela de vendas
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS vendas (
+                id VARCHAR(100) PRIMARY KEY,
+                numero INT,
+                nome VARCHAR(255),
+                telefone VARCHAR(50),
+                email VARCHAR(255),
+                comprovante_codigo VARCHAR(100),
+                qr_code TEXT,
+                status_pagamento ENUM('pendente', 'confirmado', 'cancelado') DEFAULT 'pendente',
+                valor_pago DECIMAL(10,2),
+                data_pedido DATETIME,
+                data_pagamento DATETIME
+            )
+        `);
+        
+        // Criar tabela de sorteios
+        await connection.execute(`
+            CREATE TABLE IF NOT EXISTS sorteios (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                numero INT,
+                ganhador_nome VARCHAR(255),
+                ganhador_telefone VARCHAR(50),
+                ganhador_email VARCHAR(255),
+                data_sorteio DATETIME
+            )
+        `);
+        
+        // Inserir números de 1 a 100
+        for (let i = 1; i <= 100; i++) {
+            await connection.execute(
+                'INSERT IGNORE INTO numeros (numero) VALUES (?)',
+                [i]
+            );
+        }
+        
+        // Inserir configuração padrão se não existir
         await connection.execute(
-            'INSERT IGNORE INTO numeros (numero) VALUES (?)',
-            [i]
+            `INSERT IGNORE INTO configuracoes (id) VALUES (1)`
         );
+        
+        connection.release();
+        dbConnected = true;
+        console.log('✅ Todas as tabelas criadas/verificadas!');
+        return true;
+    } catch (error) {
+        console.error('❌ Erro no MySQL:', error.message);
+        dbConnected = false;
+        return false;
     }
-    
-    // Inserir configuração padrão se não existir
-    await connection.execute(
-        `INSERT IGNORE INTO configuracoes (id) VALUES (1)`
-    );
-    
-    connection.release();
-    console.log('✅ Banco de dados MySQL conectado e tabelas criadas!');
+}
+
+// ============================================
+// MIDDLEWARE PARA VERIFICAR BANCO
+// ============================================
+async function checkDB(req, res, next) {
+    if (!dbConnected) {
+        return res.status(503).json({ error: 'Banco de dados não disponível. Tente novamente.' });
+    }
+    next();
 }
 
 // ============================================
@@ -123,20 +146,24 @@ async function initDatabase() {
 // ============================================
 
 async function getConfig() {
+    if (!dbConnected) return {};
     const [rows] = await pool.execute('SELECT * FROM configuracoes WHERE id = 1');
-    return rows[0];
+    return rows[0] || {};
 }
 
 async function updateConfig(config) {
+    if (!dbConnected) return;
     await pool.execute('UPDATE configuracoes SET ? WHERE id = 1', [config]);
 }
 
 async function getNumeros() {
+    if (!dbConnected) return [];
     const [rows] = await pool.execute('SELECT * FROM numeros ORDER BY numero');
     return rows;
 }
 
 async function updateNumero(numero, data) {
+    if (!dbConnected) return;
     await pool.execute('UPDATE numeros SET ? WHERE numero = ?', [data, numero]);
 }
 
@@ -144,7 +171,7 @@ async function updateNumero(numero, data) {
 // ROTAS PÚBLICAS
 // ============================================
 
-app.get('/api/numeros', async (req, res) => {
+app.get('/api/numeros', checkDB, async (req, res) => {
     try {
         const config = await getConfig();
         const numeros = await getNumeros();
@@ -157,7 +184,7 @@ app.get('/api/numeros', async (req, res) => {
     }
 });
 
-app.get('/api/configuracoes', async (req, res) => {
+app.get('/api/configuracoes', checkDB, async (req, res) => {
     try {
         const config = await getConfig();
         const configPublica = {
@@ -182,7 +209,7 @@ app.get('/api/configuracoes', async (req, res) => {
     }
 });
 
-app.get('/api/ultimo-sorteio', async (req, res) => {
+app.get('/api/ultimo-sorteio', checkDB, async (req, res) => {
     try {
         const [rows] = await pool.execute('SELECT * FROM sorteios ORDER BY data_sorteio DESC LIMIT 1');
         res.json(rows[0] || null);
@@ -191,7 +218,7 @@ app.get('/api/ultimo-sorteio', async (req, res) => {
     }
 });
 
-app.post('/api/reservar', async (req, res) => {
+app.post('/api/reservar', checkDB, async (req, res) => {
     try {
         const { numero, nome, telefone, email } = req.body;
         const config = await getConfig();
@@ -249,7 +276,7 @@ app.post('/api/reservar', async (req, res) => {
 // ROTAS ADMIN
 // ============================================
 
-app.get('/api/admin/dashboard', async (req, res) => {
+app.get('/api/admin/dashboard', checkDB, async (req, res) => {
     try {
         const numeros = await getNumeros();
         const [vendasRows] = await pool.execute('SELECT * FROM vendas');
@@ -267,7 +294,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
     }
 });
 
-app.get('/api/admin/vendas', async (req, res) => {
+app.get('/api/admin/vendas', checkDB, async (req, res) => {
     try {
         const [rows] = await pool.execute("SELECT * FROM vendas WHERE status_pagamento = 'pendente'");
         res.json(rows);
@@ -276,7 +303,7 @@ app.get('/api/admin/vendas', async (req, res) => {
     }
 });
 
-app.get('/api/admin/numeros', async (req, res) => {
+app.get('/api/admin/numeros', checkDB, async (req, res) => {
     try {
         const numeros = await getNumeros();
         res.json(numeros);
@@ -285,7 +312,7 @@ app.get('/api/admin/numeros', async (req, res) => {
     }
 });
 
-app.post('/api/admin/confirmar-pagamento', async (req, res) => {
+app.post('/api/admin/confirmar-pagamento', checkDB, async (req, res) => {
     try {
         const { venda_id, numero } = req.body;
         
@@ -298,7 +325,7 @@ app.post('/api/admin/confirmar-pagamento', async (req, res) => {
     }
 });
 
-app.post('/api/admin/cancelar-venda', async (req, res) => {
+app.post('/api/admin/cancelar-venda', checkDB, async (req, res) => {
     try {
         const { venda_id, numero } = req.body;
         
@@ -319,7 +346,7 @@ app.post('/api/admin/cancelar-venda', async (req, res) => {
     }
 });
 
-app.get('/api/admin/exportar', async (req, res) => {
+app.get('/api/admin/exportar', checkDB, async (req, res) => {
     try {
         const [rows] = await pool.execute("SELECT * FROM vendas WHERE status_pagamento = 'confirmado'");
         res.json(rows);
@@ -328,7 +355,7 @@ app.get('/api/admin/exportar', async (req, res) => {
     }
 });
 
-app.post('/api/admin/sortear', async (req, res) => {
+app.post('/api/admin/sortear', checkDB, async (req, res) => {
     try {
         const numeros = await getNumeros();
         const pagos = numeros.filter(n => n.status === 'pago');
@@ -364,7 +391,7 @@ app.post('/api/admin/sortear', async (req, res) => {
     }
 });
 
-app.get('/api/admin/historico-sorteios', async (req, res) => {
+app.get('/api/admin/historico-sorteios', checkDB, async (req, res) => {
     try {
         const [rows] = await pool.execute('SELECT * FROM sorteios ORDER BY data_sorteio DESC');
         res.json(rows);
@@ -373,7 +400,7 @@ app.get('/api/admin/historico-sorteios', async (req, res) => {
     }
 });
 
-app.get('/api/admin/configuracoes', async (req, res) => {
+app.get('/api/admin/configuracoes', checkDB, async (req, res) => {
     try {
         const config = await getConfig();
         res.json(config);
@@ -382,7 +409,7 @@ app.get('/api/admin/configuracoes', async (req, res) => {
     }
 });
 
-app.post('/api/admin/configuracoes', async (req, res) => {
+app.post('/api/admin/configuracoes', checkDB, async (req, res) => {
     try {
         const novasConfig = req.body;
         await updateConfig(novasConfig);
@@ -390,6 +417,17 @@ app.post('/api/admin/configuracoes', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// ============================================
+// ROTA DE HEALTH CHECK (para a Hostinger)
+// ============================================
+app.get('/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        db: dbConnected ? 'connected' : 'disconnected',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // ============================================
@@ -406,18 +444,30 @@ app.get('/admin', (req, res) => {
 // ============================================
 // INICIAR SERVIDOR
 // ============================================
-initDatabase().then(() => {
+async function startServer() {
+    console.log('🚀 Iniciando servidor...');
+    
+    // Tenta conectar ao banco
+    await initDatabase();
+    
+    // Se não conectou, tenta novamente em 5 segundos
+    if (!dbConnected) {
+        console.log('⚠️ Banco não conectado. Tentando novamente em 5 segundos...');
+        setTimeout(async () => {
+            await initDatabase();
+        }, 5000);
+    }
+    
     app.listen(PORT, '0.0.0.0', () => {
         console.log('='.repeat(50));
         console.log('🚀 SISTEMA DE RIFA COM MYSQL');
         console.log('='.repeat(50));
         console.log(`📱 Site: http://localhost:${PORT}`);
         console.log(`👨‍💼 Admin: http://localhost:${PORT}/admin`);
-        console.log(`💾 Banco: MySQL (persistente)`);
+        console.log(`💾 Banco: ${dbConnected ? 'Conectado ✅' : 'Desconectado ❌'}`);
+        console.log(`🔍 Health: http://localhost:${PORT}/health`);
         console.log('='.repeat(50));
     });
-}).catch(err => {
-    console.error('❌ Erro no MySQL:', err.message);
-    console.error('🔴 Verifique sua senha no DB_CONFIG!');
-    process.exit(1);
-});
+}
+
+startServer();
