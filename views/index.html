@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>Mega Rifa - Escolha seu Número</title>
     <style>
         * {
@@ -15,7 +15,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
         }
 
         .container {
@@ -23,7 +23,7 @@
             margin: 0 auto;
             background: white;
             border-radius: 20px;
-            padding: 30px;
+            padding: 20px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
 
@@ -31,31 +31,35 @@
             text-align: center;
             color: #333;
             margin-bottom: 10px;
+            font-size: 1.4em;
         }
 
         .subtitle {
             text-align: center;
             color: #666;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            font-size: 0.9em;
         }
 
         .ganhador-banner {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
             color: white;
-            padding: 20px;
+            padding: 15px;
             border-radius: 15px;
             text-align: center;
             margin-bottom: 20px;
+            font-size: 0.9em;
         }
 
         .rifa-bloqueada {
             background: #f44336;
             color: white;
-            padding: 15px;
+            padding: 12px;
             border-radius: 10px;
             text-align: center;
             margin-bottom: 20px;
             font-weight: bold;
+            font-size: 0.9em;
         }
 
         .imagem-rifa {
@@ -65,33 +69,34 @@
 
         .imagem-rifa img {
             max-width: 100%;
-            max-height: 200px;
+            max-height: 150px;
             border-radius: 10px;
         }
 
-        /* INFO BAR - mostra os números selecionados */
+        /* INFO BAR */
         .info-bar {
             background: #667eea;
             color: white;
-            padding: 15px 20px;
+            padding: 12px 15px;
             border-radius: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
         }
 
         .numeros-selecionados {
-            font-size: 1.1em;
+            font-size: 0.85em;
+            flex: 1;
         }
 
         .total-valor {
-            font-size: 1.3em;
+            font-size: 1.1em;
             font-weight: bold;
             background: rgba(255,255,255,0.2);
-            padding: 8px 15px;
+            padding: 5px 12px;
             border-radius: 8px;
         }
 
@@ -99,23 +104,20 @@
             background: #ff9800;
             color: white;
             border: none;
-            padding: 8px 15px;
+            padding: 6px 12px;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-        }
-
-        .btn-limpar:hover {
-            background: #f57c00;
+            font-size: 0.8em;
         }
 
         /* LEGENDA */
         .legenda {
             display: flex;
-            gap: 20px;
+            gap: 12px;
             justify-content: center;
-            margin-bottom: 20px;
-            padding: 15px;
+            margin-bottom: 15px;
+            padding: 10px;
             background: #f9f9f9;
             border-radius: 10px;
             flex-wrap: wrap;
@@ -124,13 +126,14 @@
         .legenda-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
+            font-size: 0.75em;
         }
 
         .cor {
-            width: 20px;
-            height: 20px;
-            border-radius: 5px;
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
         }
 
         .cor.disponivel { background: #4caf50; }
@@ -138,15 +141,15 @@
         .cor.pago { background: #f44336; }
         .cor.selected { background: #2196F3; }
 
-        /* TABELA DE NÚMEROS */
+        /* TABELA DE NÚMEROS - OTIMIZADA PARA CELULAR */
         .grid-numeros {
             display: grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap: 10px;
-            padding: 20px;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 10px;
             background: white;
             border-radius: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .numero-item {
@@ -154,11 +157,61 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2em;
+            font-size: 1em;
             font-weight: bold;
             border-radius: 10px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Tablet e Desktop */
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+            .container {
+                padding: 30px;
+            }
+            h1 {
+                font-size: 1.8em;
+            }
+            .grid-numeros {
+                grid-template-columns: repeat(10, 1fr);
+                gap: 10px;
+                padding: 20px;
+            }
+            .numero-item {
+                font-size: 1.2em;
+            }
+            .legenda-item {
+                font-size: 0.9em;
+            }
+            .info-bar {
+                padding: 15px 20px;
+            }
+            .numeros-selecionados {
+                font-size: 1em;
+            }
+        }
+
+        /* Celular pequeno */
+        @media (max-width: 480px) {
+            .grid-numeros {
+                gap: 6px;
+                padding: 8px;
+            }
+            .numero-item {
+                font-size: 0.85em;
+                border-radius: 8px;
+            }
+            .info-bar {
+                flex-direction: column;
+                text-align: center;
+            }
+            .total-valor {
+                font-size: 1em;
+            }
         }
 
         .numero-item.disponivel {
@@ -181,26 +234,31 @@
         }
 
         .numero-item.disponivel:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(76,175,80,0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(76,175,80,0.4);
         }
 
         .numero-item.selected {
             background: #2196F3 !important;
-            box-shadow: 0 0 0 3px #ff9800;
-            transform: scale(1.05);
+            box-shadow: 0 0 0 2px #ff9800;
+            transform: scale(1.02);
         }
 
         /* FORMULÁRIO */
         .form-area {
             background: #f9f9f9;
-            padding: 20px;
+            padding: 15px;
             border-radius: 15px;
             margin-top: 20px;
         }
 
-        .form-group {
+        .form-area h3 {
+            font-size: 1.1em;
             margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
         }
 
         .form-group label {
@@ -208,24 +266,25 @@
             margin-bottom: 5px;
             font-weight: 500;
             color: #333;
+            font-size: 0.85em;
         }
 
         .form-group input {
             width: 100%;
-            padding: 12px;
+            padding: 10px;
             border: 1px solid #ddd;
             border-radius: 8px;
-            font-size: 1em;
+            font-size: 0.9em;
         }
 
         button {
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 1.1em;
+            font-size: 1em;
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s;
@@ -257,7 +316,7 @@
         .modal-content {
             background: white;
             border-radius: 20px;
-            padding: 30px;
+            padding: 20px;
             max-width: 500px;
             width: 90%;
             text-align: center;
@@ -265,20 +324,27 @@
             overflow-y: auto;
         }
 
+        .modal-content h2 {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
         .info-pagamento {
             background: #f5f5f5;
-            padding: 15px;
+            padding: 12px;
             border-radius: 10px;
             margin: 15px 0;
             text-align: left;
+            font-size: 0.85em;
         }
 
         .numeros-reservados-list {
             background: #e8f5e9;
-            padding: 10px;
+            padding: 8px;
             border-radius: 8px;
             margin: 10px 0;
             font-weight: bold;
+            font-size: 0.9em;
         }
 
         .btn-whatsapp {
@@ -294,21 +360,6 @@
             background: #666;
             margin-top: 10px;
         }
-
-        @media (max-width: 768px) {
-            .grid-numeros {
-                grid-template-columns: repeat(5, 1fr);
-                gap: 8px;
-                padding: 10px;
-            }
-            .container {
-                padding: 15px;
-            }
-            .info-bar {
-                flex-direction: column;
-                text-align: center;
-            }
-        }
     </style>
 </head>
 <body>
@@ -323,13 +374,13 @@
         <!-- BARRA DE INFORMAÇÕES -->
         <div class="info-bar">
             <div class="numeros-selecionados">
-                📌 <strong id="qtdSelecionados">0</strong> número(s) selecionado(s): 
+                📌 <strong id="qtdSelecionados">0</strong> número(s): 
                 <span id="listaNumerosSelecionados">nenhum</span>
             </div>
             <div class="total-valor">
-                💰 Total: R$ <span id="totalValor">0,00</span>
+                💰 R$ <span id="totalValor">0,00</span>
             </div>
-            <button class="btn-limpar" onclick="limparTudo()">🗑️ Limpar tudo</button>
+            <button class="btn-limpar" onclick="limparTudo()">🗑️ Limpar</button>
         </div>
 
         <!-- LEGENDA -->
@@ -375,18 +426,18 @@
                 <p><strong>🔢 Quantidade:</strong> <span id="modalQuantidade"></span> números</p>
                 <p><strong>📌 Números:</strong> <span id="modalNumeros"></span></p>
                 <p><strong>💰 Valor Total:</strong> R$ <span id="modalValorTotal"></span></p>
-                <p><strong>📋 Código do Comprovante:</strong> <span id="modalCodigoUnico"></span></p>
+                <p><strong>📋 Código:</strong> <span id="modalCodigoUnico"></span></p>
                 <div id="modalQR" style="margin: 15px 0; text-align: center;"></div>
                 <p><strong>📱 Chave PIX:</strong> <span id="modalPix"></span></p>
                 <hr>
                 <div id="mensagensComprovante"></div>
             </div>
             
-            <p style="color: #f44336; font-weight: bold;">
+            <p style="color: #f44336; font-weight: bold; font-size: 0.8em;">
                 ⚠️ APÓS O PAGAMENTO, ENVIE O COMPROVANTE!
             </p>
             
-            <button id="btnWhatsApp" class="btn-whatsapp">📱 Enviar Comprovante via WhatsApp</button>
+            <button id="btnWhatsApp" class="btn-whatsapp">📱 Enviar via WhatsApp</button>
             <button onclick="fecharModal()" class="btn-fechar">Fechar</button>
         </div>
     </div>
@@ -397,7 +448,6 @@
         let configRifa = {};
         let rifaAtiva = true;
 
-        // Carregar configurações
         function carregarConfiguracoes() {
             fetch('/api/configuracoes')
                 .then(res => res.json())
@@ -409,7 +459,12 @@
                     if (config.rifa_ativa === 'false') {
                         rifaAtiva = false;
                         document.getElementById('btnReservar').disabled = true;
-                        document.getElementById('avisoBloqueio').innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada! Aguarde a próxima rifa para participar.</div>';
+                        document.getElementById('avisoBloqueio').innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada! Aguarde a próxima rifa.</div>';
+                    } else {
+                        // Se a rifa está ativa, garantir que o banner do ganhador seja limpo se não houver ganhador recente
+                        if (!config.ultimo_ganhador || config.ultimo_ganhador === '') {
+                            document.getElementById('ganhadorBanner').innerHTML = '';
+                        }
                     }
                     
                     if (config.imagem_rifa && config.imagem_rifa !== '') {
@@ -432,7 +487,8 @@
             fetch('/api/ultimo-sorteio')
                 .then(res => res.json())
                 .then(sorteio => {
-                    if (sorteio && sorteio.numero) {
+                    // Só mostra o banner se houver sorteio E a rifa estiver finalizada
+                    if (sorteio && sorteio.numero && configRifa.rifa_ativa === 'false') {
                         document.getElementById('ganhadorBanner').innerHTML = `
                             <div class="ganhador-banner">
                                 🎉 ÚLTIMO GANHADOR! 🎉<br>
@@ -440,6 +496,9 @@
                                 Sorteio em ${new Date(sorteio.data_sorteio).toLocaleDateString()}
                             </div>
                         `;
+                    } else {
+                        // Se a rifa está ativa, esconde o banner
+                        document.getElementById('ganhadorBanner').innerHTML = '';
                     }
                 });
         }
@@ -455,6 +514,8 @@
                     if (!rifaAtiva) {
                         document.getElementById('btnReservar').disabled = true;
                     }
+                    // Recarregar o banner para garantir consistência
+                    carregarUltimoSorteio();
                 });
         }
 
@@ -501,7 +562,6 @@
         }
 
         function atualizarInterface() {
-            // Atualizar visual dos números
             document.querySelectorAll('.numero-item').forEach(el => {
                 const num = parseInt(el.textContent);
                 if (numerosSelecionados.includes(num)) {
@@ -511,7 +571,6 @@
                 }
             });
             
-            // Atualizar texto da barra
             const qtd = numerosSelecionados.length;
             const valorUnitario = parseFloat(configRifa.valor_rifa || 10);
             const total = qtd * valorUnitario;
@@ -530,7 +589,6 @@
             }
         }
 
-        // Reservar números
         document.getElementById('btnReservar').onclick = () => {
             if (!rifaAtiva) {
                 alert('⚠️ Esta rifa já foi finalizada!');
@@ -564,19 +622,14 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    // Mostrar modal com UM QR Code
                     document.getElementById('modalNomeRifa').textContent = data.nome_rifa || configRifa.nome_rifa;
                     document.getElementById('modalQuantidade').textContent = data.total_numeros;
                     document.getElementById('modalNumeros').textContent = data.numeros.map(n => n.numero).sort((a,b) => a-b).join(', ');
                     document.getElementById('modalValorTotal').textContent = data.valor_total.toFixed(2).replace('.', ',');
+                    document.getElementById('modalQR').innerHTML = `<img src="${data.numeros[0].qrCode}" style="width: 120px;"><br><small>Comprovante único</small>`;
                     
-                    // Usar o QR Code do primeiro número como referência
-                    document.getElementById('modalQR').innerHTML = `<img src="${data.numeros[0].qrCode}" style="width: 150px;"><br><small>Comprovante para todos os ${data.total_numeros} números</small>`;
-                    
-                    // Gerar um código único para todos os números
                     const codigoUnico = `RIFA-MULTI-${data.numeros[0].comprovante.split('-')[2]}`;
                     document.getElementById('modalCodigoUnico').textContent = codigoUnico;
-                    
                     document.getElementById('modalPix').textContent = data.chave_pix;
                     
                     let mensagensHtml = '';
@@ -603,7 +656,6 @@
                     
                     document.getElementById('modal').style.display = 'flex';
                     
-                    // Limpar formulário
                     document.getElementById('nome').value = '';
                     document.getElementById('telefone').value = '';
                     document.getElementById('email').value = '';
@@ -624,7 +676,6 @@
             document.getElementById('modal').style.display = 'none';
         }
 
-        // Inicializar
         carregarConfiguracoes();
         carregarUltimoSorteio();
         carregarNumeros();
