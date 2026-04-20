@@ -39,8 +39,6 @@
             margin-bottom: 30px;
         }
 
-        /* ========== NOVOS ESTILOS ========== */
-        
         /* Banner do Ganhador */
         .ganhador-banner {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
@@ -58,7 +56,6 @@
             100% { transform: scale(1); }
         }
 
-        /* Rifa Bloqueada */
         .rifa-bloqueada {
             background: #f44336;
             color: white;
@@ -69,7 +66,6 @@
             font-weight: bold;
         }
 
-        /* Imagem da Rifa */
         .imagem-rifa {
             text-align: center;
             margin-bottom: 20px;
@@ -80,6 +76,48 @@
             max-height: 200px;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        /* Botão de seleção múltipla */
+        .modo-selecao {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .btn-modo {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-modo.active {
+            background: #4caf50;
+        }
+
+        .numeros-selecionados {
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+
+        .btn-limpar {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
         }
 
         /* TABELA DE NÚMEROS */
@@ -146,6 +184,7 @@
         .numero-item.selected {
             box-shadow: 0 0 0 3px #ff9800, 0 5px 15px rgba(0,0,0,0.2);
             transform: scale(1.05);
+            background: linear-gradient(135deg, #ff9800, #f57c00);
         }
 
         /* LEGENDA */
@@ -175,6 +214,7 @@
         .cor.disponivel { background: #4caf50; }
         .cor.reservado { background: #ff9800; }
         .cor.pago { background: #f44336; }
+        .cor.selected { background: #ff9800; box-shadow: 0 0 0 2px #333; }
 
         /* FORMULÁRIO */
         .form-area {
@@ -268,6 +308,13 @@
             text-align: left;
         }
 
+        .numeros-reservados {
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
         .btn-whatsapp {
             background: #25D366;
             margin-top: 10px;
@@ -280,14 +327,6 @@
         .btn-fechar {
             background: #666;
             margin-top: 10px;
-        }
-
-        .comprovante-texto {
-            background: #e8f5e9;
-            padding: 10px;
-            border-radius: 8px;
-            font-family: monospace;
-            word-break: break-all;
         }
 
         @media (max-width: 768px) {
@@ -307,44 +346,41 @@
         <h1 id="nomeRifa">🎫 MEGA RIFA PREMIUM</h1>
         <div class="subtitle" id="descricaoRifa">🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆</div>
 
-        <!-- BANNER DO GANHADOR (aparece se houver sorteio) -->
         <div id="ganhadorBanner"></div>
-
-        <!-- IMAGEM DA RIFA (upload do admin) -->
         <div id="imagemRifa" class="imagem-rifa"></div>
-
-        <!-- AVISO DE RIFA BLOQUEADA (aparece se rifa estiver finalizada) -->
         <div id="avisoBloqueio"></div>
 
-        <!-- LEGENDA EXPLICATIVA -->
+        <!-- MODO DE SELEÇÃO -->
+        <div class="modo-selecao">
+            <div>
+                <button id="btnModoUnico" class="btn-modo active" onclick="setModoSelecao('unico')">🔢 Seleção Única</button>
+                <button id="btnModoMultiplo" class="btn-modo" onclick="setModoSelecao('multiplo')">📦 Seleção Múltipla</button>
+            </div>
+            <div id="contadorSelecionados" class="numeros-selecionados" style="display: none;">
+                Números selecionados: <span id="qtdSelecionados">0</span>
+                <button class="btn-limpar" onclick="limparSelecao()" style="margin-left: 10px;">🗑️ Limpar</button>
+            </div>
+        </div>
+
+        <!-- LEGENDA -->
         <div class="legenda">
-            <div class="legenda-item">
-                <div class="cor disponivel"></div>
-                <span>Disponível</span>
-            </div>
-            <div class="legenda-item">
-                <div class="cor reservado"></div>
-                <span>Reservado (Aguardando Pagamento)</span>
-            </div>
-            <div class="legenda-item">
-                <div class="cor pago"></div>
-                <span>Pago (Confirmado)</span>
-            </div>
+            <div class="legenda-item"><div class="cor disponivel"></div><span>Disponível</span></div>
+            <div class="legenda-item"><div class="cor reservado"></div><span>Reservado</span></div>
+            <div class="legenda-item"><div class="cor pago"></div><span>Pago</span></div>
+            <div class="legenda-item"><div class="cor selected"></div><span>Selecionado</span></div>
         </div>
 
         <!-- TABELA DE NÚMEROS -->
         <div class="numeros-table">
-            <h2>📌 Escolha seu número da sorte</h2>
-            <div class="grid-numeros" id="gridNumeros">
-                <!-- Os números aparecerão aqui via JavaScript -->
-            </div>
+            <h2>📌 Escolha seu(s) número(s) da sorte</h2>
+            <div class="grid-numeros" id="gridNumeros"></div>
         </div>
 
         <!-- ÁREA DE COMPRA -->
         <div class="form-area">
             <h3>📝 Finalizar Reserva</h3>
-            <div class="numero-selecionado">
-                Número Selecionado: <strong id="numeroSelecionadoTexto">Nenhum</strong>
+            <div class="numero-selecionado" id="infoSelecao">
+                Nenhum número selecionado
             </div>
             
             <div class="form-group">
@@ -362,24 +398,23 @@
                 <input type="email" id="email" placeholder="seu@email.com">
             </div>
             
-            <button id="btnReservar" disabled>🔒 Reservar Número</button>
+            <button id="btnReservar" disabled>🔒 Reservar Número(s)</button>
         </div>
     </div>
 
-    <!-- MODAL DE COMPROVANTE COM WHATSAPP -->
+    <!-- MODAL DE COMPROVANTE -->
     <div id="modal" class="modal">
         <div class="modal-content">
             <h2>✅ Reserva Realizada!</h2>
             <div class="info-pagamento">
                 <p><strong>🎫 Rifa:</strong> <span id="modalNomeRifa"></span></p>
-                <p><strong>🔢 Número:</strong> <span id="modalNumero"></span></p>
-                <p><strong>💰 Valor:</strong> R$ <span id="modalValor"></span></p>
-                <p><strong>📋 Código:</strong> <span id="modalCodigo" class="comprovante-texto"></span></p>
+                <p><strong>🔢 Números:</strong> <span id="modalNumeros"></span></p>
+                <p><strong>💰 Total:</strong> R$ <span id="modalValorTotal"></span></p>
+                <p><strong>📋 Códigos:</strong></p>
+                <div id="modalCodigos" class="numeros-reservados"></div>
                 <div id="modalQR" style="margin: 15px 0; text-align: center;"></div>
                 <p><strong>📱 Chave PIX:</strong> <span id="modalPix"></span></p>
-                
                 <hr style="margin: 15px 0;">
-                
                 <div id="mensagensComprovante"></div>
             </div>
             
@@ -394,12 +429,88 @@
 
     <script>
         let numeros = [];
-        let numeroSelecionado = null;
-        let ultimaReserva = null;
+        let numerosSelecionados = [];
+        let modoSelecao = 'unico'; // 'unico' ou 'multiplo'
         let configRifa = {};
         let rifaAtiva = true;
+        let ultimaReserva = null;
 
-        // ========== CARREGAR CONFIGURAÇÕES ==========
+        function setModoSelecao(modo) {
+            modoSelecao = modo;
+            limparSelecao();
+            
+            document.getElementById('btnModoUnico').classList.remove('active');
+            document.getElementById('btnModoMultiplo').classList.remove('active');
+            
+            if (modo === 'unico') {
+                document.getElementById('btnModoUnico').classList.add('active');
+                document.getElementById('contadorSelecionados').style.display = 'none';
+                document.getElementById('infoSelecao').innerHTML = 'Nenhum número selecionado';
+            } else {
+                document.getElementById('btnModoMultiplo').classList.add('active');
+                document.getElementById('contadorSelecionados').style.display = 'block';
+                document.getElementById('infoSelecao').innerHTML = 'Clique nos números para selecionar vários';
+            }
+        }
+
+        function selecionarNumero(numero) {
+            if (!rifaAtiva) {
+                alert('⚠️ Esta rifa já foi finalizada!');
+                return;
+            }
+            
+            const numeroObj = numeros.find(n => n.numero === numero);
+            if (numeroObj.status !== 'disponivel') {
+                alert('⚠️ Este número não está disponível!');
+                return;
+            }
+            
+            if (modoSelecao === 'unico') {
+                numerosSelecionados = [numero];
+                atualizarInterfaceSelecao();
+            } else {
+                const index = numerosSelecionados.indexOf(numero);
+                if (index === -1) {
+                    numerosSelecionados.push(numero);
+                } else {
+                    numerosSelecionados.splice(index, 1);
+                }
+                atualizarInterfaceSelecao();
+            }
+        }
+
+        function limparSelecao() {
+            numerosSelecionados = [];
+            atualizarInterfaceSelecao();
+        }
+
+        function atualizarInterfaceSelecao() {
+            // Atualizar visual dos números
+            document.querySelectorAll('.numero-item').forEach(el => {
+                const num = parseInt(el.textContent);
+                if (numerosSelecionados.includes(num)) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+            
+            // Atualizar texto
+            if (numerosSelecionados.length === 0) {
+                document.getElementById('infoSelecao').innerHTML = 'Nenhum número selecionado';
+                document.getElementById('btnReservar').disabled = true;
+            } else if (modoSelecao === 'unico') {
+                document.getElementById('infoSelecao').innerHTML = `Número Selecionado: <strong>${numerosSelecionados[0]}</strong>`;
+                document.getElementById('btnReservar').disabled = false;
+            } else {
+                const numerosOrdenados = [...numerosSelecionados].sort((a,b) => a-b);
+                document.getElementById('infoSelecao').innerHTML = `Números Selecionados: <strong>${numerosOrdenados.join(', ')}</strong> (${numerosSelecionados.length} números)`;
+                document.getElementById('qtdSelecionados').textContent = numerosSelecionados.length;
+                document.getElementById('btnReservar').disabled = false;
+            }
+        }
+
+        // Carregar configurações
         function carregarConfiguracoes() {
             fetch('/api/configuracoes')
                 .then(res => res.json())
@@ -408,60 +519,44 @@
                     document.getElementById('nomeRifa').textContent = `🎫 ${config.nome_rifa || 'MEGA RIFA PREMIUM'}`;
                     document.getElementById('descricaoRifa').textContent = config.descricao_rifa || '🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆';
                     
-                    // Verificar se rifa está ativa
                     if (config.rifa_ativa === 'false') {
                         rifaAtiva = false;
                         document.getElementById('btnReservar').disabled = true;
-                        document.getElementById('btnReservar').textContent = '🔒 RIFA FINALIZADA - AGUARDE PRÓXIMA';
-                        document.getElementById('btnReservar').style.background = '#999';
-                        
-                        const aviso = document.getElementById('avisoBloqueio');
-                        aviso.innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada! Aguarde a próxima rifa para participar.</div>';
+                        document.getElementById('avisoBloqueio').innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada! Aguarde a próxima rifa para participar.</div>';
                     }
                     
-                    // Carregar imagem
                     if (config.imagem_rifa && config.imagem_rifa !== '') {
                         document.getElementById('imagemRifa').innerHTML = `<img src="${config.imagem_rifa}" alt="Imagem da Rifa">`;
                     }
                     
-                    // Aplicar cores personalizadas
                     if (config.cor_principal) {
                         const style = document.createElement('style');
                         style.textContent = `
-                            .numero-item.disponivel {
-                                background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'});
-                            }
-                            .numero-selecionado {
-                                background: ${config.cor_principal};
-                            }
-                            button:not(.btn-whatsapp):not(.btn-fechar) {
-                                background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'});
-                            }
+                            .numero-item.disponivel { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
+                            .numero-selecionado { background: ${config.cor_principal}; }
+                            button:not(.btn-whatsapp):not(.btn-fechar) { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
                         `;
                         document.head.appendChild(style);
                     }
                 });
         }
 
-        // ========== CARREGAR ÚLTIMO SORTEIO ==========
         function carregarUltimoSorteio() {
             fetch('/api/ultimo-sorteio')
                 .then(res => res.json())
                 .then(sorteio => {
                     if (sorteio && sorteio.numero) {
-                        const banner = `
+                        document.getElementById('ganhadorBanner').innerHTML = `
                             <div class="ganhador-banner">
                                 🎉 ÚLTIMO GANHADOR! 🎉<br>
                                 <strong>Número ${sorteio.numero}</strong> - ${sorteio.ganhador_nome}<br>
                                 Sorteio realizado em ${new Date(sorteio.data_sorteio).toLocaleDateString()}
                             </div>
                         `;
-                        document.getElementById('ganhadorBanner').innerHTML = banner;
                     }
                 });
         }
 
-        // ========== CARREGAR NÚMEROS ==========
         function carregarNumeros() {
             fetch('/api/numeros')
                 .then(res => res.json())
@@ -472,12 +567,10 @@
                     
                     if (!rifaAtiva) {
                         document.getElementById('btnReservar').disabled = true;
-                        document.getElementById('btnReservar').textContent = '🔒 RIFA FINALIZADA';
                     }
                 });
         }
 
-        // ========== ATUALIZAR GRID ==========
         function atualizarGrid() {
             const grid = document.getElementById('gridNumeros');
             grid.innerHTML = '';
@@ -489,38 +582,20 @@
                 
                 if (num.status === 'disponivel' && rifaAtiva) {
                     div.onclick = () => selecionarNumero(num.numero);
-                } else if (num.status === 'disponivel' && !rifaAtiva) {
-                    div.style.cursor = 'not-allowed';
-                    div.style.opacity = '0.5';
+                }
+                
+                if (numerosSelecionados.includes(num.numero)) {
+                    div.classList.add('selected');
                 }
                 
                 grid.appendChild(div);
             });
         }
 
-        // ========== SELECIONAR NÚMERO ==========
-        function selecionarNumero(numero) {
-            if (!rifaAtiva) {
-                alert('⚠️ Esta rifa já foi finalizada!');
-                return;
-            }
-            
-            numeroSelecionado = numero;
-            document.getElementById('numeroSelecionadoTexto').textContent = numero;
-            document.getElementById('btnReservar').disabled = false;
-            
-            document.querySelectorAll('.numero-item').forEach(el => {
-                el.classList.remove('selected');
-                if (el.textContent == numero) {
-                    el.classList.add('selected');
-                }
-            });
-        }
-
-        // ========== RESERVAR NÚMERO ==========
+        // Reservar números
         document.getElementById('btnReservar').onclick = () => {
             if (!rifaAtiva) {
-                alert('⚠️ Esta rifa já foi finalizada! Não é possível comprar.');
+                alert('⚠️ Esta rifa já foi finalizada!');
                 return;
             }
             
@@ -533,55 +608,72 @@
                 return;
             }
             
-            if (!numeroSelecionado) {
-                alert('⚠️ Selecione um número!');
+            if (numerosSelecionados.length === 0) {
+                alert('⚠️ Selecione pelo menos um número!');
                 return;
             }
             
-            fetch('/api/reservar', {
+            const endpoint = numerosSelecionados.length === 1 ? '/api/reservar' : '/api/reservar-multiplos';
+            const body = numerosSelecionados.length === 1 
+                ? { numero: numerosSelecionados[0], nome, telefone, email }
+                : { numeros: numerosSelecionados, nome, telefone, email };
+            
+            fetch(endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    numero: numeroSelecionado,
-                    nome: nome,
-                    telefone: telefone,
-                    email: email
-                })
+                body: JSON.stringify(body)
             })
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     ultimaReserva = data;
                     
-                    document.getElementById('modalNomeRifa').textContent = data.nome_rifa || configRifa.nome_rifa || 'MEGA RIFA';
-                    document.getElementById('modalNumero').textContent = data.numero;
-                    document.getElementById('modalValor').textContent = data.valor;
-                    document.getElementById('modalCodigo').textContent = data.comprovante;
-                    document.getElementById('modalQR').innerHTML = `<img src="${data.qrCode}" style="width: 150px;">`;
+                    document.getElementById('modalNomeRifa').textContent = data.nome_rifa || configRifa.nome_rifa;
+                    
+                    if (data.numeros) {
+                        // Múltiplos números
+                        const numerosLista = data.numeros.map(n => n.numero).join(', ');
+                        document.getElementById('modalNumeros').textContent = numerosLista;
+                        document.getElementById('modalValorTotal').textContent = data.valor_total;
+                        
+                        let codigosHtml = '';
+                        data.numeros.forEach(n => {
+                            codigosHtml += `<div><strong>Nº ${n.numero}:</strong> ${n.comprovante}<br><img src="${n.qrCode}" style="width: 80px; margin: 5px;"></div>`;
+                        });
+                        document.getElementById('modalCodigos').innerHTML = codigosHtml;
+                        document.getElementById('modalQR').innerHTML = '';
+                    } else {
+                        // Único número
+                        document.getElementById('modalNumeros').textContent = data.numero;
+                        document.getElementById('modalValorTotal').textContent = data.valor;
+                        document.getElementById('modalCodigos').innerHTML = `<div><strong>Código:</strong> ${data.comprovante}</div>`;
+                        document.getElementById('modalQR').innerHTML = `<img src="${data.qrCode}" style="width: 150px;">`;
+                    }
+                    
                     document.getElementById('modalPix').textContent = data.chave_pix;
                     
                     let mensagensHtml = '';
-                    if (data.mensagem_boas_vindas) {
-                        mensagensHtml += `<p>📢 ${data.mensagem_boas_vindas}</p>`;
-                    }
-                    if (data.instrucoes_pagamento) {
-                        mensagensHtml += `<p>📝 ${data.instrucoes_pagamento.replace(/\n/g, '<br>')}</p>`;
-                    }
-                    if (data.rodape_comprovante) {
-                        mensagensHtml += `<p>✨ ${data.rodape_comprovante.replace(/\n/g, '<br>')}</p>`;
-                    }
+                    if (data.mensagem_boas_vindas) mensagensHtml += `<p>📢 ${data.mensagem_boas_vindas}</p>`;
+                    if (data.instrucoes_pagamento) mensagensHtml += `<p>📝 ${data.instrucoes_pagamento.replace(/\n/g, '<br>')}</p>`;
+                    if (data.rodape_comprovante) mensagensHtml += `<p>✨ ${data.rodape_comprovante.replace(/\n/g, '<br>')}</p>`;
                     document.getElementById('mensagensComprovante').innerHTML = mensagensHtml;
                     
                     const btnWhatsApp = document.getElementById('btnWhatsApp');
                     const adminWhatsApp = configRifa.admin_whatsapp || '55999999999';
                     
+                    let numerosTexto = '';
+                    if (data.numeros) {
+                        numerosTexto = data.numeros.map(n => n.numero).join(', ');
+                    } else {
+                        numerosTexto = data.numero;
+                    }
+                    
                     const mensagemAdmin = `*NOVA RESERVA DE RIFA* 🎫%0A%0A` +
                         `*Cliente:* ${nome}%0A` +
                         `*Telefone:* ${telefone}%0A` +
                         `*Email:* ${email}%0A` +
-                        `*Número:* ${data.numero}%0A` +
-                        `*Valor:* R$ ${data.valor}%0A` +
-                        `*Código:* ${data.comprovante}%0A%0A` +
+                        `*Números:* ${numerosTexto}%0A` +
+                        `*Total:* R$ ${data.valor_total || data.valor}%0A%0A` +
                         `✅ Aguardando confirmação de pagamento!`;
                     
                     btnWhatsApp.onclick = () => {
@@ -593,13 +685,16 @@
                     document.getElementById('nome').value = '';
                     document.getElementById('telefone').value = '';
                     document.getElementById('email').value = '';
-                    document.getElementById('numeroSelecionadoTexto').textContent = 'Nenhum';
-                    numeroSelecionado = null;
+                    limparSelecao();
                     document.getElementById('btnReservar').disabled = true;
                     
                     carregarNumeros();
                 } else {
                     alert('Erro: ' + data.error);
+                    if (data.numero_indisponivel) {
+                        carregarNumeros();
+                        limparSelecao();
+                    }
                 }
             });
         };
@@ -608,7 +703,6 @@
             document.getElementById('modal').style.display = 'none';
         }
 
-        // ========== INICIALIZAR ==========
         carregarConfiguracoes();
         carregarUltimoSorteio();
         carregarNumeros();
