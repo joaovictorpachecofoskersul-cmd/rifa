@@ -19,7 +19,7 @@ app.use(express.static(path.join(__dirname, 'views')));
 const DB_CONFIG = {
     host: 'localhost',
     user: 'u519611382_rifa',
-    password: 'SUA_SENHA_AQUI',  // 🔴🔴🔴 MUDE AQUI 🔴🔴🔴
+    password: '21@Brasil21',  // 🔴🔴🔴 MUDE AQUI 🔴🔴🔴
     database: 'u519611382_rifa',
     waitForConnections: true,
     connectionLimit: 10
