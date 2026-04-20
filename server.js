@@ -14,10 +14,10 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'views')));
 
 // ============================================
-// CONFIGURAÇÃO DO BANCO - CORRIGIDA PARA HOSTINGER
+// CONFIGURAÇÃO DO BANCO
 // ============================================
 const DB_CONFIG = {
-    host: 'localhost',  // Na Hostinger, use 'localhost' quando o MySQL está no mesmo plano
+    host: 'localhost',
     user: 'u519611382_rifa',
     password: '21@Brasil21',
     database: 'u519611382_rifa',
@@ -26,8 +26,22 @@ const DB_CONFIG = {
     connectTimeout: 10000
 };
 
+const ADMIN_PASSWORD = 'admin123';
+
 let pool;
 let dbConnected = false;
+
+// ============================================
+// AUTENTICAÇÃO ADMIN
+// ============================================
+function authAdmin(req, res, next) {
+    const token = req.headers['admin-token'];
+    if (token === ADMIN_PASSWORD) {
+        next();
+    } else {
+        res.status(401).json({ error: 'Acesso negado!' });
+    }
+}
 
 // ============================================
 // INICIALIZAR BANCO DE DADOS
@@ -37,7 +51,6 @@ async function initDatabase() {
         console.log('🔄 Conectando ao MySQL...');
         pool = mysql.createPool(DB_CONFIG);
         
-        // Testar conexão
         const connection = await pool.getConnection();
         console.log('✅ MySQL conectado!');
         
@@ -107,23 +120,53 @@ async function initDatabase() {
             )
         `);
         
-        // Inserir números de 1 a 100
-        for (let i = 1; i <= 100; i++) {
-            await connection.execute(
-                'INSERT IGNORE INTO numeros (numero) VALUES (?)',
-                [i]
-            );
+        // ============================================
+        // 🔴 PARTE MAIS IMPORTANTE: INSERIR NÚMEROS
+        // ============================================
+        
+        // Verificar quantos números existem
+        const [existingNumbers] = await connection.execute('SELECT COUNT(*) as total FROM numeros');
+        console.log(`📊 Números existentes no banco: ${existingNumbers[0].total}`);
+        
+        if (existingNumbers[0].total === 0) {
+            console.log('📝 Inserindo números de 1 a 100...');
+            
+            // Inserir números de 1 a 100
+            for (let i = 1; i <= 100; i++) {
+                await connection.execute(
+                    'INSERT INTO numeros (numero, status) VALUES (?, "disponivel")',
+                    [i]
+                );
+            }
+            console.log('✅ 100 números inseridos com sucesso!');
+        } else if (existingNumbers[0].total < 100) {
+            // Se tem menos de 100, completa os que faltam
+            console.log(`⚠️ Apenas ${existingNumbers[0].total} números encontrados. Completando...`);
+            for (let i = 1; i <= 100; i++) {
+                const [check] = await connection.execute('SELECT * FROM numeros WHERE numero = ?', [i]);
+                if (check.length === 0) {
+                    await connection.execute('INSERT INTO numeros (numero, status) VALUES (?, "disponivel")', [i]);
+                }
+            }
+            console.log('✅ Números completados!');
         }
         
+        // Verificar novamente
+        const [finalCount] = await connection.execute('SELECT COUNT(*) as total FROM numeros');
+        console.log(`✅ Total final de números no banco: ${finalCount[0].total}`);
+        
         // Inserir configuração padrão se não existir
-        await connection.execute(
-            `INSERT IGNORE INTO configuracoes (id) VALUES (1)`
-        );
+        const [configExists] = await connection.execute('SELECT COUNT(*) as total FROM configuracoes WHERE id = 1');
+        if (configExists[0].total === 0) {
+            await connection.execute(`INSERT INTO configuracoes (id) VALUES (1)`);
+            console.log('✅ Configuração padrão inserida');
+        }
         
         connection.release();
         dbConnected = true;
-        console.log('✅ Todas as tabelas criadas/verificadas!');
+        console.log('✅ Banco de dados pronto e números cadastrados!');
         return true;
+        
     } catch (error) {
         console.error('❌ Erro no MySQL:', error.message);
         dbConnected = false;
@@ -175,11 +218,18 @@ app.get('/api/numeros', checkDB, async (req, res) => {
     try {
         const config = await getConfig();
         const numeros = await getNumeros();
+        
+        console.log(`📊 Enviando ${numeros.length} números para o cliente`);
+        
         res.json({
             rifa_ativa: config.rifa_ativa === 'true',
-            numeros: numeros.map(n => ({ numero: n.numero, status: n.status }))
+            numeros: numeros.map(n => ({ 
+                numero: n.numero, 
+                status: n.status 
+            }))
         });
     } catch (error) {
+        console.error('Erro em /api/numeros:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -268,15 +318,16 @@ app.post('/api/reservar', checkDB, async (req, res) => {
             rodape_comprovante: config.rodape_comprovante
         });
     } catch (error) {
+        console.error('Erro em /api/reservar:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
 // ============================================
-// ROTAS ADMIN
+// ROTAS ADMIN (COM AUTENTICAÇÃO)
 // ============================================
 
-app.get('/api/admin/dashboard', checkDB, async (req, res) => {
+app.get('/api/admin/dashboard', checkDB, authAdmin, async (req, res) => {
     try {
         const numeros = await getNumeros();
         const [vendasRows] = await pool.execute('SELECT * FROM vendas');
@@ -294,7 +345,7 @@ app.get('/api/admin/dashboard', checkDB, async (req, res) => {
     }
 });
 
-app.get('/api/admin/vendas', checkDB, async (req, res) => {
+app.get('/api/admin/vendas', checkDB, authAdmin, async (req, res) => {
     try {
         const [rows] = await pool.execute("SELECT * FROM vendas WHERE status_pagamento = 'pendente'");
         res.json(rows);
@@ -303,7 +354,7 @@ app.get('/api/admin/vendas', checkDB, async (req, res) => {
     }
 });
 
-app.get('/api/admin/numeros', checkDB, async (req, res) => {
+app.get('/api/admin/numeros', checkDB, authAdmin, async (req, res) => {
     try {
         const numeros = await getNumeros();
         res.json(numeros);
@@ -312,7 +363,7 @@ app.get('/api/admin/numeros', checkDB, async (req, res) => {
     }
 });
 
-app.post('/api/admin/confirmar-pagamento', checkDB, async (req, res) => {
+app.post('/api/admin/confirmar-pagamento', checkDB, authAdmin, async (req, res) => {
     try {
         const { venda_id, numero } = req.body;
         
@@ -325,7 +376,7 @@ app.post('/api/admin/confirmar-pagamento', checkDB, async (req, res) => {
     }
 });
 
-app.post('/api/admin/cancelar-venda', checkDB, async (req, res) => {
+app.post('/api/admin/cancelar-venda', checkDB, authAdmin, async (req, res) => {
     try {
         const { venda_id, numero } = req.body;
         
@@ -346,7 +397,7 @@ app.post('/api/admin/cancelar-venda', checkDB, async (req, res) => {
     }
 });
 
-app.get('/api/admin/exportar', checkDB, async (req, res) => {
+app.get('/api/admin/exportar', checkDB, authAdmin, async (req, res) => {
     try {
         const [rows] = await pool.execute("SELECT * FROM vendas WHERE status_pagamento = 'confirmado'");
         res.json(rows);
@@ -355,7 +406,7 @@ app.get('/api/admin/exportar', checkDB, async (req, res) => {
     }
 });
 
-app.post('/api/admin/sortear', checkDB, async (req, res) => {
+app.post('/api/admin/sortear', checkDB, authAdmin, async (req, res) => {
     try {
         const numeros = await getNumeros();
         const pagos = numeros.filter(n => n.status === 'pago');
@@ -391,7 +442,7 @@ app.post('/api/admin/sortear', checkDB, async (req, res) => {
     }
 });
 
-app.get('/api/admin/historico-sorteios', checkDB, async (req, res) => {
+app.get('/api/admin/historico-sorteios', checkDB, authAdmin, async (req, res) => {
     try {
         const [rows] = await pool.execute('SELECT * FROM sorteios ORDER BY data_sorteio DESC');
         res.json(rows);
@@ -400,7 +451,7 @@ app.get('/api/admin/historico-sorteios', checkDB, async (req, res) => {
     }
 });
 
-app.get('/api/admin/configuracoes', checkDB, async (req, res) => {
+app.get('/api/admin/configuracoes', checkDB, authAdmin, async (req, res) => {
     try {
         const config = await getConfig();
         res.json(config);
@@ -409,7 +460,7 @@ app.get('/api/admin/configuracoes', checkDB, async (req, res) => {
     }
 });
 
-app.post('/api/admin/configuracoes', checkDB, async (req, res) => {
+app.post('/api/admin/configuracoes', checkDB, authAdmin, async (req, res) => {
     try {
         const novasConfig = req.body;
         await updateConfig(novasConfig);
@@ -420,7 +471,7 @@ app.post('/api/admin/configuracoes', checkDB, async (req, res) => {
 });
 
 // ============================================
-// ROTA DE HEALTH CHECK (para a Hostinger)
+// ROTA DE HEALTH CHECK
 // ============================================
 app.get('/health', (req, res) => {
     res.json({ 
@@ -448,10 +499,9 @@ async function startServer() {
     console.log('🚀 Iniciando servidor...');
     
     // Tenta conectar ao banco
-    await initDatabase();
+    const connected = await initDatabase();
     
-    // Se não conectou, tenta novamente em 5 segundos
-    if (!dbConnected) {
+    if (!connected) {
         console.log('⚠️ Banco não conectado. Tentando novamente em 5 segundos...');
         setTimeout(async () => {
             await initDatabase();
@@ -464,8 +514,8 @@ async function startServer() {
         console.log('='.repeat(50));
         console.log(`📱 Site: http://localhost:${PORT}`);
         console.log(`👨‍💼 Admin: http://localhost:${PORT}/admin`);
+        console.log(`🔐 Senha Admin: ${ADMIN_PASSWORD}`);
         console.log(`💾 Banco: ${dbConnected ? 'Conectado ✅' : 'Desconectado ❌'}`);
-        console.log(`🔍 Health: http://localhost:${PORT}/health`);
         console.log('='.repeat(50));
     });
 }
