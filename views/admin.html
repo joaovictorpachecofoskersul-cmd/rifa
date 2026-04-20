@@ -225,7 +225,31 @@
             cursor: pointer;
             font-size: 1.1em;
             font-weight: bold;
-            margin: 10px 0;
+            margin: 10px;
+        }
+
+        .btn-nova-rifa {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 10px;
+        }
+
+        .btn-limpar {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin: 10px;
         }
 
         .tab {
@@ -344,6 +368,12 @@
             cursor: pointer;
         }
 
+        hr {
+            margin: 20px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
@@ -376,7 +406,7 @@
         <nav>
             <a onclick="showTab('dashboard')">📊 Dashboard</a>
             <a onclick="showTab('vendas')">💰 Vendas Pendentes</a>
-            <a onclick="showTab('sorteio')">🎲 Realizar Sorteio</a>
+            <a onclick="showTab('sorteio')">🎲 Sorteio / Nova Rifa</a>
             <a onclick="showTab('historico')">📜 Histórico de Sorteios</a>
             <a onclick="showTab('todos-numeros')">🔢 Todos Números</a>
             <a onclick="showTab('configuracoes')">⚙️ Configurações</a>
@@ -407,14 +437,38 @@
             <\/div>
         <\/div>
 
-        <!-- Sorteio -->
+        <!-- Sorteio com botões de Reset -->
         <div id="sorteio" class="tab">
-            <h1>🎲 Realizar Sorteio</h1>
+            <h1>🎲 Gerenciar Sorteio</h1>
             <div class="table-container">
                 <div style="text-align: center; padding: 20px;">
                     <h3>Total de números pagos: <span id="totalPagos" style="color: #4caf50; font-size: 1.5em;">0</span></h3>
-                    <button class="btn-sortear" onclick="realizarSorteio()">🎲 SORTEAR NÚMERO GANHADOR 🎲</button>
-                    <p style="margin-top: 15px; color: #666;">⚠️ Atenção: O sorteio escolhe um número aleatório entre os já pagos!</p>
+                    
+                    <button class="btn-sortear" onclick="realizarSorteio()">
+                        🎲 SORTEAR NÚMERO GANHADOR 🎲
+                    </button>
+                    
+                    <p style="margin: 15px 0; color: #666;">⚠️ Atenção: O sorteio escolhe um número aleatório entre os já pagos!</p>
+                    
+                    <hr>
+                    
+                    <h3 style="margin: 20px 0 10px 0;">🔄 NOVA RIFA</h3>
+                    <p style="color: #666; margin-bottom: 15px;">Após o sorteio, use estas opções para começar uma nova rifa</p>
+                    
+                    <button class="btn-nova-rifa" onclick="resetarRifa()">
+                        🆕 INICIAR NOVA RIFA (LIMPA TUDO)
+                    </button>
+                    
+                    <button class="btn-limpar" onclick="limparVendas()">
+                        🗑️ LIMPAR VENDAS PENDENTES
+                    </button>
+                    
+                    <p style="margin-top: 20px; font-size: 0.8em; color: #999; background: #fff3cd; padding: 10px; border-radius: 8px;">
+                        ⚠️ <strong>Cuidado:</strong><br>
+                        • "Iniciar Nova Rifa" - Reseta TODOS os números e limpa TODAS as vendas<br>
+                        • "Limpar Vendas Pendentes" - Apenas remove vendas não confirmadas e libera os números<br>
+                        • O histórico de sorteios é MANTIDO em ambos os casos
+                    </p>
                 </div>
             </div>
         </div>
@@ -436,7 +490,7 @@
             <div class="table-container">
                 <table id="tabelaNumeros">
                     <thead><tr><th>Número</th><th>Status</th><th>Comprador</th><th>Telefone</th><th>Data Reserva</th></tr></thead>
-                    <tbody><tr><td colspan="5">Carregando...<\/td><\/tr><\/tbody>
+                    <tbody><td><td colspan="5">Carregando...<\/td><\/tr><\/tbody>
                 <\/table>
             <\/div>
         <\/div>
@@ -744,6 +798,82 @@
         }
     }
 
+    // ============================================
+    // FUNÇÕES DE RESET DA RIFA
+    // ============================================
+
+    async function resetarRifa() {
+        const confirmado = confirm(
+            '⚠️ ATENÇÃO! ⚠️\n\n' +
+            'Isso irá:\n' +
+            '✅ Resetar TODOS os números (liberar 1 a 100)\n' +
+            '✅ Limpar TODAS as vendas (pendentes e confirmadas)\n' +
+            '✅ Reativar a rifa para novas vendas\n' +
+            '✅ Limpar o histórico do último ganhador\n\n' +
+            'O histórico de sorteios será MANTIDO.\n\n' +
+            'Deseja realmente INICIAR UMA NOVA RIFA?'
+        );
+        
+        if (confirmado) {
+            const confirmado2 = confirm('ÚLTIMA CONFIRMAÇÃO: Tem certeza que quer resetar TUDO e começar uma nova rifa?');
+            if (confirmado2) {
+                try {
+                    const response = await fetch('/api/admin/reset-rifa', {
+                        method: 'POST',
+                        headers: getHeaders()
+                    });
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        alert('✅ ' + data.message + '\n\nA nova rifa já está disponível para vendas!');
+                        carregarDashboard();
+                        carregarVendasPendentes();
+                        carregarTodosNumeros();
+                        carregarTotalPagos();
+                        carregarHistorico();
+                    } else {
+                        alert('❌ Erro: ' + data.error);
+                    }
+                } catch(e) {
+                    alert('❌ Erro ao resetar: ' + e.message);
+                }
+            }
+        }
+    }
+
+    async function limparVendas() {
+        const confirmado = confirm(
+            '⚠️ CUIDADO! ⚠️\n\n' +
+            'Isso irá:\n' +
+            '✅ Limpar TODAS as vendas pendentes\n' +
+            '✅ Resetar números reservados para disponível\n' +
+            '✅ Manter o histórico de sorteios\n\n' +
+            'Deseja realmente limpar todas as vendas pendentes?'
+        );
+        
+        if (confirmado) {
+            try {
+                const response = await fetch('/api/admin/limpar-vendas', {
+                    method: 'POST',
+                    headers: getHeaders()
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    carregarDashboard();
+                    carregarVendasPendentes();
+                    carregarTodosNumeros();
+                    carregarTotalPagos();
+                } else {
+                    alert('❌ Erro: ' + data.error);
+                }
+            } catch(e) {
+                alert('❌ Erro: ' + e.message);
+            }
+        }
+    }
+
     function atualizarPreview() {
         const preview = document.getElementById('previewComprovante');
         const nomeRifa = document.getElementById('nomeRifa').value || 'MEGA RIFA PREMIUM';
@@ -870,7 +1000,6 @@
     document.getElementById('instrucoesPagamento')?.addEventListener('input', atualizarPreview);
     document.getElementById('rodapeComprovante')?.addEventListener('input', atualizarPreview);
     
-    // Mostrar hex das cores
     document.getElementById('corPrincipal')?.addEventListener('input', (e) => {
         document.getElementById('corPrincipalHex').textContent = e.target.value;
     });
