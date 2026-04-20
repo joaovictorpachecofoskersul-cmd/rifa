@@ -27,13 +27,13 @@ const ADMIN_PASSWORD = 'admin123';
 // Garantir que a pasta data existe
 if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR);
+    console.log('📁 Pasta data criada');
 }
 
 // ============================================
 // FUNÇÕES DE LEITURA/ESCRITA
 // ============================================
 
-// Carregar configurações
 function loadConfig() {
     try {
         if (fs.existsSync(CONFIG_FILE)) {
@@ -41,7 +41,6 @@ function loadConfig() {
         }
     } catch (e) {}
     
-    // Configuração padrão
     return {
         id: 1,
         nome_rifa: 'MEGA RIFA PREMIUM',
@@ -67,7 +66,6 @@ function saveConfig(config) {
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
 }
 
-// Carregar números
 function loadNumeros() {
     try {
         if (fs.existsSync(NUMEROS_FILE)) {
@@ -75,7 +73,6 @@ function loadNumeros() {
         }
     } catch (e) {}
     
-    // Criar números de 1 a 100
     const numeros = [];
     for (let i = 1; i <= 100; i++) {
         numeros.push({
@@ -97,7 +94,6 @@ function saveNumeros(numeros) {
     fs.writeFileSync(NUMEROS_FILE, JSON.stringify(numeros, null, 2));
 }
 
-// Carregar vendas
 function loadVendas() {
     try {
         if (fs.existsSync(VENDAS_FILE)) {
@@ -111,7 +107,6 @@ function saveVendas(vendas) {
     fs.writeFileSync(VENDAS_FILE, JSON.stringify(vendas, null, 2));
 }
 
-// Carregar sorteios
 function loadSorteios() {
     try {
         if (fs.existsSync(SORTEIOS_FILE)) {
@@ -195,6 +190,73 @@ app.get('/api/ultimo-sorteio', (req, res) => {
     }
 });
 
+app.post('/api/reservar', async (req, res) => {
+    try {
+        const { numero, nome, telefone, email } = req.body;
+        const config = loadConfig();
+
+        if (config.rifa_ativa === 'false') {
+            return res.status(400).json({ error: 'Rifa finalizada!' });
+        }
+
+        let numeros = loadNumeros();
+        const numeroObj = numeros.find(n => n.numero === numero);
+        
+        if (!numeroObj || numeroObj.status !== 'disponivel') {
+            return res.status(400).json({ error: 'Número indisponível' });
+        }
+
+        const comprovanteId = uuidv4();
+        const comprovanteCodigo = `RIFA-${numero}-${comprovanteId.slice(0, 8)}`.toUpperCase();
+        const qrCodeDataUrl = await QRCode.toDataURL(comprovanteCodigo);
+        const valorRifa = parseFloat(config.valor_rifa);
+
+        numeroObj.status = 'reservado';
+        numeroObj.comprador_nome = nome;
+        numeroObj.comprador_telefone = telefone;
+        numeroObj.comprador_email = email;
+        numeroObj.comprovante_codigo = comprovanteCodigo;
+        numeroObj.data_reserva = new Date().toISOString();
+        saveNumeros(numeros);
+
+        const vendas = loadVendas();
+        vendas.push({
+            id: comprovanteId,
+            numero: numero,
+            nome: nome,
+            telefone: telefone,
+            email: email,
+            comprovante_codigo: comprovanteCodigo,
+            qr_code: qrCodeDataUrl,
+            status_pagamento: 'pendente',
+            valor_pago: valorRifa,
+            data_pedido: new Date().toISOString(),
+            data_pagamento: null
+        });
+        saveVendas(vendas);
+
+        res.json({
+            success: true,
+            comprovante: comprovanteCodigo,
+            qrCode: qrCodeDataUrl,
+            numero: numero,
+            valor: valorRifa,
+            chave_pix: config.chave_pix,
+            data: new Date().toISOString(),
+            nome_rifa: config.nome_rifa,
+            mensagem_boas_vindas: config.mensagem_boas_vindas,
+            instrucoes_pagamento: config.instrucoes_pagamento,
+            rodape_comprovante: config.rodape_comprovante
+        });
+    } catch (error) {
+        console.error('Erro:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================
+// ROTA PARA RESERVAR MÚLTIPLOS NÚMEROS
+// ============================================
 app.post('/api/reservar-multiplos', async (req, res) => {
     try {
         const { numeros, nome, telefone, email } = req.body;
@@ -213,7 +275,6 @@ app.post('/api/reservar-multiplos', async (req, res) => {
         const valorRifa = parseFloat(config.valor_rifa);
         const valorTotal = valorRifa * numeros.length;
 
-        // Verificar se todos os números estão disponíveis
         for (const numero of numeros) {
             const numeroObj = numerosDisponiveis.find(n => n.numero === numero);
             if (!numeroObj || numeroObj.status !== 'disponivel') {
@@ -224,13 +285,11 @@ app.post('/api/reservar-multiplos', async (req, res) => {
             }
         }
 
-        // Reservar cada número
         for (const numero of numeros) {
             const comprovanteId = uuidv4();
             const comprovanteCodigo = `RIFA-${numero}-${comprovanteId.slice(0, 8)}`.toUpperCase();
             const qrCodeDataUrl = await QRCode.toDataURL(comprovanteCodigo);
 
-            // Atualizar número
             const numeroObj = numerosDisponiveis.find(n => n.numero === numero);
             numeroObj.status = 'reservado';
             numeroObj.comprador_nome = nome;
@@ -239,7 +298,6 @@ app.post('/api/reservar-multiplos', async (req, res) => {
             numeroObj.comprovante_codigo = comprovanteCodigo;
             numeroObj.data_reserva = new Date().toISOString();
             
-            // Salvar venda
             const vendas = loadVendas();
             vendas.push({
                 id: comprovanteId,
@@ -279,7 +337,7 @@ app.post('/api/reservar-multiplos', async (req, res) => {
             data: new Date().toISOString()
         });
     } catch (error) {
-        console.error('Erro em /api/reservar-multiplos:', error);
+        console.error('Erro:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -328,7 +386,6 @@ app.post('/api/admin/confirmar-pagamento', authAdmin, (req, res) => {
     try {
         const { venda_id, numero } = req.body;
         
-        // Atualizar venda
         let vendas = loadVendas();
         const vendaIndex = vendas.findIndex(v => v.id === venda_id);
         if (vendaIndex !== -1) {
@@ -337,7 +394,6 @@ app.post('/api/admin/confirmar-pagamento', authAdmin, (req, res) => {
             saveVendas(vendas);
         }
         
-        // Atualizar número
         let numeros = loadNumeros();
         const numeroObj = numeros.find(n => n.numero === numero);
         if (numeroObj) {
@@ -356,7 +412,6 @@ app.post('/api/admin/cancelar-venda', authAdmin, (req, res) => {
     try {
         const { venda_id, numero } = req.body;
         
-        // Atualizar venda
         let vendas = loadVendas();
         const vendaIndex = vendas.findIndex(v => v.id === venda_id);
         if (vendaIndex !== -1) {
@@ -364,7 +419,6 @@ app.post('/api/admin/cancelar-venda', authAdmin, (req, res) => {
             saveVendas(vendas);
         }
         
-        // Liberar número
         let numeros = loadNumeros();
         const numeroObj = numeros.find(n => n.numero === numero);
         if (numeroObj) {
@@ -459,6 +513,66 @@ app.post('/api/admin/configuracoes', authAdmin, (req, res) => {
         Object.assign(config, novasConfig);
         saveConfig(config);
         res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================
+// ROTAS DE RESET
+// ============================================
+
+app.post('/api/admin/reset-rifa', authAdmin, (req, res) => {
+    try {
+        let numeros = loadNumeros();
+        numeros = numeros.map(n => ({
+            numero: n.numero,
+            status: 'disponivel',
+            comprador_nome: null,
+            comprador_telefone: null,
+            comprador_email: null,
+            comprovante_codigo: null,
+            data_reserva: null,
+            data_confirmacao: null
+        }));
+        saveNumeros(numeros);
+        
+        saveVendas([]);
+        
+        const config = loadConfig();
+        config.rifa_ativa = 'true';
+        config.ultimo_ganhador = '';
+        config.ultimo_ganhador_numero = '';
+        saveConfig(config);
+        
+        res.json({ success: true, message: 'Rifa resetada com sucesso!' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/admin/limpar-vendas', authAdmin, (req, res) => {
+    try {
+        saveVendas([]);
+        
+        let numeros = loadNumeros();
+        numeros = numeros.map(n => ({
+            numero: n.numero,
+            status: 'disponivel',
+            comprador_nome: null,
+            comprador_telefone: null,
+            comprador_email: null,
+            comprovante_codigo: null,
+            data_reserva: null,
+            data_confirmacao: null
+        }));
+        saveNumeros(numeros);
+        
+        const config = loadConfig();
+        config.rifa_ativa = 'true';
+        saveConfig(config);
+        
+        res.json({ success: true, message: 'Vendas limpas com sucesso!' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
