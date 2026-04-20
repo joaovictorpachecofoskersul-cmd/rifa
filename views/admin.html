@@ -430,9 +430,17 @@
             <div class="table-container">
                 <table id="tabelaVendas">
                     <thead>
-                        <tr><th>Número</th><th>Cliente</th><th>WhatsApp</th><th>Email</th><th>Valor</th><th>Comprovante</th><th>Ações</th></tr>
+                        <tr>
+                            <th>Números</th>
+                            <th>Cliente</th>
+                            <th>WhatsApp</th>
+                            <th>Email</th>
+                            <th>Valor Total</th>
+                            <th>Quantidade</th>
+                            <th>Ações</th>
+                        </tr>
                     </thead>
-                    <tbody><tr><td colspan="7">Carregando...<\/td><\/tr><\/tbody>
+                    <tbody><td><td colspan="7">Carregando...<\/td><\/tr><\/tbody>
                 <\/table>
             <\/div>
         <\/div>
@@ -490,7 +498,7 @@
             <div class="table-container">
                 <table id="tabelaNumeros">
                     <thead><tr><th>Número</th><th>Status</th><th>Comprador</th><th>Telefone</th><th>Data Reserva</th></tr></thead>
-                    <tbody><td><td colspan="5">Carregando...<\/td><\/tr><\/tbody>
+                    <tbody><tr><td colspan="5">Carregando...<\/td><\/tr><\/tbody>
                 <\/table>
             <\/div>
         <\/div>
@@ -500,87 +508,66 @@
             <h1>⚙️ Configurações do Sistema</h1>
             
             <div class="config-form">
-                <!-- Configurações Gerais -->
                 <div class="grupo-config">
                     <h3>📌 Configurações Gerais</h3>
-                    
                     <label>Nome da Rifa</label>
                     <input type="text" id="nomeRifa" placeholder="Ex: MEGA RIFA PREMIUM">
-                    
-                    <label>Descrição da Rifa</label>
-                    <textarea id="descricaoRifa" rows="3" placeholder="Descreva os prêmios e detalhes da rifa..."></textarea>
-                    
-                    <label>Valor da Rifa (R$)</label>
-                    <input type="number" id="valorRifa" step="0.01" placeholder="10.00">
-                    
+                    <label>Descrição</label>
+                    <textarea id="descricaoRifa" rows="3"></textarea>
+                    <label>Valor (R$)</label>
+                    <input type="number" id="valorRifa" step="0.01">
                     <label>Chave PIX</label>
-                    <input type="text" id="chavePix" placeholder="chave@email.com ou telefone">
-                    
-                    <label>WhatsApp do Admin</label>
-                    <input type="text" id="adminWhatsapp" placeholder="5511999999999">
+                    <input type="text" id="chavePix">
+                    <label>WhatsApp Admin</label>
+                    <input type="text" id="adminWhatsapp">
                 </div>
 
-                <!-- Personalização Visual -->
                 <div class="grupo-config">
                     <h3>🎨 Personalização Visual</h3>
-                    
                     <label>URL da Imagem da Rifa</label>
                     <input type="text" id="imagemRifa" placeholder="https://exemplo.com/imagem.jpg">
-                    <small style="color: #666;">Cole o link da imagem que aparecerá no topo do site</small>
-                    
                     <label>Cor Principal</label>
                     <div class="color-input">
                         <input type="color" id="corPrincipal">
                         <span id="corPrincipalHex">#667eea</span>
                     </div>
-                    
                     <label>Cor Secundária</label>
                     <div class="color-input">
                         <input type="color" id="corSecundaria">
                         <span id="corSecundariaHex">#764ba2</span>
                     </div>
-                    <small style="color: #666;">Estas cores definem o gradiente do site</small>
                 </div>
 
-                <!-- Textos do Comprovante -->
                 <div class="grupo-config">
-                    <h3>📄 Texto do Comprovante</h3>
-                    
-                    <label>Mensagem de Boas-vindas no Comprovante</label>
-                    <textarea id="mensagemBoasVindas" rows="2" placeholder="Obrigado por participar da nossa rifa!"></textarea>
-                    
+                    <h3>📄 Textos do Comprovante</h3>
+                    <label>Mensagem de Boas-vindas</label>
+                    <textarea id="mensagemBoasVindas" rows="2"></textarea>
                     <label>Instruções de Pagamento</label>
-                    <textarea id="instrucoesPagamento" rows="3" placeholder="1. Faça o PIX para a chave acima\n2. Envie o comprovante\n3. Aguarde a confirmação"></textarea>
-                    
-                    <label>Rodapé do Comprovante</label>
-                    <textarea id="rodapeComprovante" rows="2" placeholder="Boa sorte! 🍀\nSorteio ao atingir 100 números"></textarea>
-                    
+                    <textarea id="instrucoesPagamento" rows="3"></textarea>
+                    <label>Rodapé</label>
+                    <textarea id="rodapeComprovante" rows="2"></textarea>
                     <div class="preview-comprovante">
                         <h4>🔍 PRÉVIA DO COMPROVANTE:</h4>
                         <div id="previewComprovante"></div>
                     </div>
                 </div>
 
-                <!-- Mensagens WhatsApp -->
                 <div class="grupo-config">
-                    <h3>📱 Mensagens Automáticas WhatsApp</h3>
-                    
-                    <label>Mensagem de Confirmação (Admin envia para cliente)</label>
-                    <textarea id="mensagemWhatsApp" rows="4" placeholder="Olá {nome}!\n\n✅ Seu pagamento da rifa foi CONFIRMADO!\nNúmero: {numero}\n\nBoa sorte! 🍀"></textarea>
-                    
-                    <label>Mensagem do Ganhador (Sorteio)</label>
-                    <textarea id="mensagemGanhador" rows="4" placeholder="🎉 PARABÉNS {nome}! 🎉\n\nVocê foi o GANHADOR da nossa rifa!\nNúmero sorteado: {numero}\n\nEntre em contato para receber seu prêmio! 🏆"></textarea>
-                    
-                    <small style="color: #666;">Use as variáveis: {nome}, {numero}</small>
+                    <h3>📱 Mensagens WhatsApp</h3>
+                    <label>Mensagem de Confirmação</label>
+                    <textarea id="mensagemWhatsApp" rows="4"></textarea>
+                    <label>Mensagem do Ganhador</label>
+                    <textarea id="mensagemGanhador" rows="4"></textarea>
+                    <small>Use: {nome}, {numero}</small>
                 </div>
                 
-                <button class="btn-salvar" onclick="salvarConfiguracoes()">💾 Salvar Todas Configurações</button>
+                <button class="btn-salvar" onclick="salvarConfiguracoes()">💾 Salvar Configurações</button>
             </div>
             
             <div class="table-container" style="margin-top: 20px;">
                 <h3>📥 Exportar Dados</h3>
-                <button class="btn-confirmar" onclick="exportarDados()">📥 Exportar Vendas Confirmadas (JSON)</button>
-                <button class="btn-confirmar" onclick="exportarCSV()">📊 Exportar para Excel (CSV)</button>
+                <button class="btn-confirmar" onclick="exportarDados()">📥 Exportar JSON</button>
+                <button class="btn-confirmar" onclick="exportarCSV()">📊 Exportar CSV</button>
             </div>
         </div>
     </div>
@@ -591,8 +578,8 @@
     <div class="modal-content">
         <h2>🎉 NÚMERO SORTEADO! 🎉</h2>
         <div class="numero-sorteado" id="numeroSorteado"></div>
-        <div id="infoGanhador" style="margin: 15px 0;"></div>
-        <button onclick="fecharModalSorteio()" style="margin-top: 10px;">Fechar</button>
+        <div id="infoGanhador"></div>
+        <button onclick="fecharModalSorteio()">Fechar</button>
     </div>
 </div>
 
@@ -620,7 +607,6 @@
         localStorage.removeItem('adminLogado');
         document.getElementById('loginOverlay').style.display = 'flex';
         document.getElementById('mainWrapper').style.display = 'none';
-        document.getElementById('senhaAdmin').value = '';
     }
 
     function getHeaders() {
@@ -665,20 +651,47 @@
                 return;
             }
             
-            tbody.innerHTML = vendas.map(v => `
-                <tr>
-                    <td><strong>${v.numero}</strong></td>
-                    <td>${v.nome}</td>
-                    <td>${v.telefone}</td>
-                    <td>${v.email}</td>
-                    <td>R$ ${v.valor_pago}</td>
-                    <td><code>${v.comprovante_codigo}</code></td>
-                    <td>
-                        <button class="btn-confirmar" onclick="confirmarPagamento('${v.id}', ${v.numero})">✅ Confirmar</button>
-                        <button class="btn-cancelar" onclick="cancelarVenda('${v.id}', ${v.numero})">❌ Cancelar</button>
-                    </td>
-                </tr>
-            `).join('');
+            // Agrupar vendas por cliente (para múltiplos números)
+            const vendasPorCliente = {};
+            vendas.forEach(v => {
+                const key = `${v.nome}|${v.telefone}|${v.email}`;
+                if (!vendasPorCliente[key]) {
+                    vendasPorCliente[key] = {
+                        nome: v.nome,
+                        telefone: v.telefone,
+                        email: v.email,
+                        numeros: [],
+                        vendas: []
+                    };
+                }
+                vendasPorCliente[key].numeros.push(v.numero);
+                vendasPorCliente[key].vendas.push(v);
+            });
+            
+            let html = '';
+            for (const key in vendasPorCliente) {
+                const cliente = vendasPorCliente[key];
+                const valorTotal = cliente.vendas.reduce((sum, v) => sum + parseFloat(v.valor_pago), 0);
+                const numerosOrdenados = cliente.numeros.sort((a,b) => a-b);
+                
+                html += `
+                    <tr>
+                        <td><strong>${numerosOrdenados.join(', ')}</strong></td>
+                        <td>${cliente.nome}</td>
+                        <td>${cliente.telefone}</td>
+                        <td>${cliente.email}</td>
+                        <td>R$ ${valorTotal.toFixed(2)}</td>
+                        <td>${cliente.numeros.length} números</td>
+                        <td>
+                            ${cliente.vendas.map(v => `
+                                <button class="btn-confirmar" onclick="confirmarPagamento('${v.id}', ${v.numero})">✅ Confirmar Nº ${v.numero}</button>
+                                <button class="btn-cancelar" onclick="cancelarVenda('${v.id}', ${v.numero})">❌ Cancelar Nº ${v.numero}</button>
+                            `).join('<br>')}
+                        </td>
+                    </tr>
+                `;
+            }
+            tbody.innerHTML = html;
         } catch(e) { console.error(e); }
     }
 
@@ -798,99 +811,56 @@
         }
     }
 
-    // ============================================
-    // FUNÇÕES DE RESET DA RIFA
-    // ============================================
-
     async function resetarRifa() {
-        const confirmado = confirm(
-            '⚠️ ATENÇÃO! ⚠️\n\n' +
-            'Isso irá:\n' +
-            '✅ Resetar TODOS os números (liberar 1 a 100)\n' +
-            '✅ Limpar TODAS as vendas (pendentes e confirmadas)\n' +
-            '✅ Reativar a rifa para novas vendas\n' +
-            '✅ Limpar o histórico do último ganhador\n\n' +
-            'O histórico de sorteios será MANTIDO.\n\n' +
-            'Deseja realmente INICIAR UMA NOVA RIFA?'
-        );
-        
-        if (confirmado) {
-            const confirmado2 = confirm('ÚLTIMA CONFIRMAÇÃO: Tem certeza que quer resetar TUDO e começar uma nova rifa?');
-            if (confirmado2) {
-                try {
-                    const response = await fetch('/api/admin/reset-rifa', {
-                        method: 'POST',
-                        headers: getHeaders()
-                    });
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        alert('✅ ' + data.message + '\n\nA nova rifa já está disponível para vendas!');
-                        carregarDashboard();
-                        carregarVendasPendentes();
-                        carregarTodosNumeros();
-                        carregarTotalPagos();
-                        carregarHistorico();
-                    } else {
-                        alert('❌ Erro: ' + data.error);
-                    }
-                } catch(e) {
-                    alert('❌ Erro ao resetar: ' + e.message);
-                }
+        if (confirm('⚠️ ATENÇÃO! Isso irá resetar TODOS os dados. Continuar?')) {
+            const response = await fetch('/api/admin/reset-rifa', {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('✅ Rifa resetada com sucesso!');
+                carregarDashboard();
+                carregarVendasPendentes();
+                carregarTodosNumeros();
+                carregarTotalPagos();
             }
         }
     }
 
     async function limparVendas() {
-        const confirmado = confirm(
-            '⚠️ CUIDADO! ⚠️\n\n' +
-            'Isso irá:\n' +
-            '✅ Limpar TODAS as vendas pendentes\n' +
-            '✅ Resetar números reservados para disponível\n' +
-            '✅ Manter o histórico de sorteios\n\n' +
-            'Deseja realmente limpar todas as vendas pendentes?'
-        );
-        
-        if (confirmado) {
-            try {
-                const response = await fetch('/api/admin/limpar-vendas', {
-                    method: 'POST',
-                    headers: getHeaders()
-                });
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('✅ ' + data.message);
-                    carregarDashboard();
-                    carregarVendasPendentes();
-                    carregarTodosNumeros();
-                    carregarTotalPagos();
-                } else {
-                    alert('❌ Erro: ' + data.error);
-                }
-            } catch(e) {
-                alert('❌ Erro: ' + e.message);
+        if (confirm('⚠️ Limpar todas as vendas pendentes?')) {
+            const response = await fetch('/api/admin/limpar-vendas', {
+                method: 'POST',
+                headers: getHeaders()
+            });
+            const data = await response.json();
+            if (data.success) {
+                alert('✅ Vendas limpas!');
+                carregarDashboard();
+                carregarVendasPendentes();
+                carregarTodosNumeros();
+                carregarTotalPagos();
             }
         }
     }
 
     function atualizarPreview() {
         const preview = document.getElementById('previewComprovante');
-        const nomeRifa = document.getElementById('nomeRifa').value || 'MEGA RIFA PREMIUM';
-        const descricao = document.getElementById('descricaoRifa').value || '🏆 Prêmio: R$ 10.000,00 + Moto 0km';
-        const valor = document.getElementById('valorRifa').value || '10.00';
-        const boasVindas = document.getElementById('mensagemBoasVindas').value || 'Obrigado por participar!';
-        const instrucoes = document.getElementById('instrucoesPagamento').value || 'Faça o PIX e envie o comprovante';
-        const rodape = document.getElementById('rodapeComprovante').value || 'Boa sorte! 🍀';
+        const nomeRifa = document.getElementById('nomeRifa').value || 'Rifa';
+        const descricao = document.getElementById('descricaoRifa').value || '';
+        const valor = document.getElementById('valorRifa').value || '10';
+        const boasVindas = document.getElementById('mensagemBoasVindas').value || '';
+        const instrucoes = document.getElementById('instrucoesPagamento').value || '';
+        const rodape = document.getElementById('rodapeComprovante').value || '';
         
         preview.innerHTML = `
-            <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
+            <div style="border:1px solid #ddd;padding:15px;border-radius:8px">
                 <h3>🎫 ${nomeRifa}</h3>
                 <p>${descricao}</p>
                 <hr>
-                <p><strong>Número:</strong> 42</p>
-                <p><strong>Valor:</strong> R$ ${valor}</p>
-                <p><strong>Código:</strong> RIFA-42-ABC123</p>
+                <p><strong>Números:</strong> 7, 15, 23, 42</p>
+                <p><strong>Total:</strong> R$ ${(parseFloat(valor) * 4).toFixed(2)}</p>
                 <hr>
                 <p>${boasVindas}</p>
                 <p>${instrucoes.replace(/\n/g, '<br>')}</p>
@@ -949,10 +919,8 @@
         });
         
         if (response.ok) {
-            alert('✅ Configurações salvas com sucesso!');
+            alert('✅ Configurações salvas!');
             atualizarPreview();
-        } else {
-            alert('❌ Erro ao salvar configurações');
         }
     }
 
@@ -963,7 +931,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `vendas_confirmadas_${new Date().toISOString()}.json`;
+        a.download = `vendas_${new Date().toISOString()}.json`;
         a.click();
     }
 
@@ -971,20 +939,20 @@
         const response = await fetch('/api/admin/exportar', { headers: getHeaders() });
         const data = await response.json();
         if (data.length === 0) {
-            alert('Nenhuma venda confirmada para exportar!');
+            alert('Nenhuma venda');
             return;
         }
-        const headers = ['Número', 'Nome', 'Telefone', 'Email', 'Valor', 'Data Pedido'];
+        const headers = ['Número', 'Nome', 'Telefone', 'Email', 'Valor'];
         const csvRows = [headers];
         data.forEach(row => {
-            csvRows.push([row.numero, row.nome, row.telefone, row.email, row.valor_pago, new Date(row.data_pedido).toLocaleString()]);
+            csvRows.push([row.numero, row.nome, row.telefone, row.email, row.valor_pago]);
         });
         const csvContent = csvRows.map(row => row.join(',')).join('\n');
-        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `vendas_confirmadas_${new Date().toISOString()}.csv`;
+        a.download = `vendas_${new Date().toISOString()}.csv`;
         a.click();
     }
 
@@ -992,7 +960,6 @@
         document.getElementById('modalSorteio').style.display = 'none';
     }
 
-    // Event listeners para preview
     document.getElementById('nomeRifa')?.addEventListener('input', atualizarPreview);
     document.getElementById('descricaoRifa')?.addEventListener('input', atualizarPreview);
     document.getElementById('valorRifa')?.addEventListener('input', atualizarPreview);
