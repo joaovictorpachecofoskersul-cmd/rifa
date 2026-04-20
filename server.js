@@ -195,68 +195,91 @@ app.get('/api/ultimo-sorteio', (req, res) => {
     }
 });
 
-app.post('/api/reservar', async (req, res) => {
+app.post('/api/reservar-multiplos', async (req, res) => {
     try {
-        const { numero, nome, telefone, email } = req.body;
+        const { numeros, nome, telefone, email } = req.body;
         const config = loadConfig();
 
         if (config.rifa_ativa === 'false') {
             return res.status(400).json({ error: 'Rifa finalizada!' });
         }
 
-        let numeros = loadNumeros();
-        const numeroObj = numeros.find(n => n.numero === numero);
-        
-        if (!numeroObj || numeroObj.status !== 'disponivel') {
-            return res.status(400).json({ error: 'Número indisponível' });
+        if (!numeros || numeros.length === 0) {
+            return res.status(400).json({ error: 'Nenhum número selecionado!' });
         }
 
-        const comprovanteId = uuidv4();
-        const comprovanteCodigo = `RIFA-${numero}-${comprovanteId.slice(0, 8)}`.toUpperCase();
-        const qrCodeDataUrl = await QRCode.toDataURL(comprovanteCodigo);
+        let numerosDisponiveis = loadNumeros();
+        const resultados = [];
         const valorRifa = parseFloat(config.valor_rifa);
+        const valorTotal = valorRifa * numeros.length;
 
-        // Atualizar número
-        numeroObj.status = 'reservado';
-        numeroObj.comprador_nome = nome;
-        numeroObj.comprador_telefone = telefone;
-        numeroObj.comprador_email = email;
-        numeroObj.comprovante_codigo = comprovanteCodigo;
-        numeroObj.data_reserva = new Date().toISOString();
-        saveNumeros(numeros);
+        // Verificar se todos os números estão disponíveis
+        for (const numero of numeros) {
+            const numeroObj = numerosDisponiveis.find(n => n.numero === numero);
+            if (!numeroObj || numeroObj.status !== 'disponivel') {
+                return res.status(400).json({ 
+                    error: `Número ${numero} não está mais disponível!`,
+                    numero_indisponivel: numero
+                });
+            }
+        }
 
-        // Salvar venda
-        const vendas = loadVendas();
-        vendas.push({
-            id: comprovanteId,
-            numero: numero,
-            nome: nome,
-            telefone: telefone,
-            email: email,
-            comprovante_codigo: comprovanteCodigo,
-            qr_code: qrCodeDataUrl,
-            status_pagamento: 'pendente',
-            valor_pago: valorRifa,
-            data_pedido: new Date().toISOString(),
-            data_pagamento: null
-        });
-        saveVendas(vendas);
+        // Reservar cada número
+        for (const numero of numeros) {
+            const comprovanteId = uuidv4();
+            const comprovanteCodigo = `RIFA-${numero}-${comprovanteId.slice(0, 8)}`.toUpperCase();
+            const qrCodeDataUrl = await QRCode.toDataURL(comprovanteCodigo);
+
+            // Atualizar número
+            const numeroObj = numerosDisponiveis.find(n => n.numero === numero);
+            numeroObj.status = 'reservado';
+            numeroObj.comprador_nome = nome;
+            numeroObj.comprador_telefone = telefone;
+            numeroObj.comprador_email = email;
+            numeroObj.comprovante_codigo = comprovanteCodigo;
+            numeroObj.data_reserva = new Date().toISOString();
+            
+            // Salvar venda
+            const vendas = loadVendas();
+            vendas.push({
+                id: comprovanteId,
+                numero: numero,
+                nome: nome,
+                telefone: telefone,
+                email: email,
+                comprovante_codigo: comprovanteCodigo,
+                qr_code: qrCodeDataUrl,
+                status_pagamento: 'pendente',
+                valor_pago: valorRifa,
+                data_pedido: new Date().toISOString(),
+                data_pagamento: null
+            });
+            saveVendas(vendas);
+            
+            resultados.push({
+                numero: numero,
+                comprovante: comprovanteCodigo,
+                qrCode: qrCodeDataUrl
+            });
+        }
+        
+        saveNumeros(numerosDisponiveis);
 
         res.json({
             success: true,
-            comprovante: comprovanteCodigo,
-            qrCode: qrCodeDataUrl,
-            numero: numero,
-            valor: valorRifa,
+            numeros: resultados,
+            total_numeros: numeros.length,
+            valor_total: valorTotal,
+            valor_unitario: valorRifa,
             chave_pix: config.chave_pix,
-            data: new Date().toISOString(),
             nome_rifa: config.nome_rifa,
             mensagem_boas_vindas: config.mensagem_boas_vindas,
             instrucoes_pagamento: config.instrucoes_pagamento,
-            rodape_comprovante: config.rodape_comprovante
+            rodape_comprovante: config.rodape_comprovante,
+            data: new Date().toISOString()
         });
     } catch (error) {
-        console.error('Erro:', error);
+        console.error('Erro em /api/reservar-multiplos:', error);
         res.status(500).json({ error: error.message });
     }
 });
