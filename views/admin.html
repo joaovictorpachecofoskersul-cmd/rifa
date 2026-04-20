@@ -16,6 +16,76 @@
             background: #f5f5f5;
         }
 
+        /* TELA DE LOGIN */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .login-box p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .login-box button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .login-box button:hover {
+            transform: translateY(-2px);
+        }
+
+        .error-msg {
+            color: #f44336;
+            margin-top: 15px;
+            display: none;
+        }
+
+        /* CONTEÚDO PRINCIPAL (escondido até login) */
+        .main-wrapper {
+            display: none;
+        }
+
         .sidebar {
             position: fixed;
             left: 0;
@@ -41,10 +111,16 @@
             margin: 5px 0;
             border-radius: 8px;
             transition: background 0.3s;
+            cursor: pointer;
         }
 
         .sidebar nav a:hover {
             background: rgba(255,255,255,0.2);
+        }
+
+        .logout-link {
+            margin-top: 30px;
+            background: rgba(255,0,0,0.3);
         }
 
         .main-content {
@@ -287,16 +363,6 @@
             text-align: left;
         }
 
-        .confete {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 999;
-        }
-
         @media (max-width: 768px) {
             .sidebar {
                 width: 100%;
@@ -310,16 +376,31 @@
     </style>
 </head>
 <body>
+
+<!-- TELA DE LOGIN -->
+<div id="loginOverlay" class="login-overlay">
+    <div class="login-box">
+        <h2>🔐 ADMIN</h2>
+        <p>Digite a senha para acessar o painel</p>
+        <input type="password" id="senhaAdmin" placeholder="Senha do Administrador" autocomplete="off">
+        <button onclick="fazerLogin()">Entrar no Painel</button>
+        <div id="errorMsg" class="error-msg">❌ Senha incorreta! Tente novamente.</div>
+    </div>
+</div>
+
+<!-- CONTEÚDO DO ADMIN (só aparece após login) -->
+<div id="mainWrapper" class="main-wrapper">
     <div class="sidebar">
         <h2>🎫 Mega Rifa<br><small>Admin Panel</small></h2>
         <nav>
-            <a href="#" onclick="showTab('dashboard')">📊 Dashboard</a>
-            <a href="#" onclick="showTab('vendas')">💰 Vendas Pendentes</a>
-            <a href="#" onclick="showTab('sorteio')">🎲 Realizar Sorteio</a>
-            <a href="#" onclick="showTab('historico')">📜 Histórico de Sorteios</a>
-            <a href="#" onclick="showTab('todos-numeros')">🔢 Todos Números</a>
-            <a href="#" onclick="showTab('configuracoes')">⚙️ Configurações</a>
-            <a href="#" onclick="window.location.href='/index.html'">🌐 Ver Site</a>
+            <a onclick="showTab('dashboard')">📊 Dashboard</a>
+            <a onclick="showTab('vendas')">💰 Vendas Pendentes</a>
+            <a onclick="showTab('sorteio')">🎲 Realizar Sorteio</a>
+            <a onclick="showTab('historico')">📜 Histórico de Sorteios</a>
+            <a onclick="showTab('todos-numeros')">🔢 Todos Números</a>
+            <a onclick="showTab('configuracoes')">⚙️ Configurações</a>
+            <a onclick="window.location.href='/'">🌐 Ver Site</a>
+            <a onclick="fazerLogout()" class="logout-link">🚪 Sair</a>
         </nav>
     </div>
 
@@ -363,7 +444,6 @@
         <!-- Sorteio -->
         <div id="sorteio" class="tab">
             <h1>🎲 Realizar Sorteio</h1>
-            
             <div class="table-container">
                 <div style="text-align: center; padding: 20px;">
                     <h3>Total de números pagos: <span id="totalPagos" style="color: #4caf50; font-size: 1.5em;">0</span></h3>
@@ -392,11 +472,7 @@
                             <th>Ações</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="6" style="text-align: center;">Carregando...</td>
-                        </tr>
-                    </tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
@@ -419,507 +495,409 @@
             <h1>⚙️ Configurações do Sistema</h1>
             
             <div class="config-form">
-                <!-- Configurações Gerais -->
                 <div class="grupo-config">
                     <h3>📌 Configurações Gerais</h3>
-                    
                     <label>Nome da Rifa</label>
                     <input type="text" id="nomeRifa" placeholder="Ex: MEGA RIFA PREMIUM">
-                    
                     <label>Descrição da Rifa</label>
-                    <textarea id="descricaoRifa" rows="3" placeholder="Descreva os prêmios e detalhes da rifa..."></textarea>
-                    
+                    <textarea id="descricaoRifa" rows="3"></textarea>
                     <label>Valor da Rifa (R$)</label>
-                    <input type="number" id="valorRifa" step="0.01" placeholder="10.00">
-                    
+                    <input type="number" id="valorRifa" step="0.01">
                     <label>Chave PIX</label>
-                    <input type="text" id="chavePix" placeholder="chave@email.com ou telefone">
-                    
+                    <input type="text" id="chavePix">
                     <label>WhatsApp do Admin</label>
-                    <input type="text" id="adminWhatsapp" placeholder="5511999999999">
+                    <input type="text" id="adminWhatsapp">
                 </div>
 
-                <!-- Configurações do Comprovante -->
                 <div class="grupo-config">
                     <h3>📄 Texto do Comprovante</h3>
-                    
-                    <label>Mensagem de Boas-vindas no Comprovante</label>
-                    <textarea id="mensagemBoasVindas" rows="2" placeholder="Obrigado por participar da nossa rifa!"></textarea>
-                    
+                    <label>Mensagem de Boas-vindas</label>
+                    <textarea id="mensagemBoasVindas" rows="2"></textarea>
                     <label>Instruções de Pagamento</label>
-                    <textarea id="instrucoesPagamento" rows="3" placeholder="1. Faça o PIX para a chave acima&#10;2. Envie o comprovante para o administrador&#10;3. Aguarde a confirmação"></textarea>
-                    
+                    <textarea id="instrucoesPagamento" rows="3"></textarea>
                     <label>Rodapé do Comprovante</label>
-                    <textarea id="rodapeComprovante" rows="2" placeholder="Boa sorte! 🍀&#10;Sorteio ao atingir 100 números vendidos"></textarea>
-                    
+                    <textarea id="rodapeComprovante" rows="2"></textarea>
                     <div class="preview-comprovante">
                         <h4>🔍 Prévia do Comprovante:</h4>
                         <div id="previewComprovante"></div>
                     </div>
                 </div>
 
-                <!-- Configurações WhatsApp -->
                 <div class="grupo-config">
-                    <h3>📱 Mensagens Automáticas WhatsApp</h3>
-                    
-                    <label>Mensagem de Confirmação (Admin envia para cliente)</label>
-                    <textarea id="mensagemWhatsApp" rows="4" placeholder="Olá {nome}!&#10;&#10;✅ Seu pagamento da rifa foi CONFIRMADO!&#10;Número: {numero}&#10;&#10;Boa sorte! 🍀"></textarea>
-                    
-                    <label>Mensagem do Ganhador (Sorteio)</label>
-                    <textarea id="mensagemGanhador" rows="4" placeholder="🎉 PARABÉNS {nome}! 🎉&#10;&#10;Você foi o GANHADOR da nossa rifa!&#10;Número sorteado: {numero}&#10;&#10;Entre em contato para receber seu prêmio! 🏆"></textarea>
-                    
-                    <small style="color: #666;">Use as variáveis: {nome}, {numero}, {comprovante}</small>
+                    <h3>📱 Mensagens WhatsApp</h3>
+                    <label>Mensagem de Confirmação</label>
+                    <textarea id="mensagemWhatsApp" rows="4"></textarea>
+                    <label>Mensagem do Ganhador</label>
+                    <textarea id="mensagemGanhador" rows="4"></textarea>
+                    <small>Use: {nome}, {numero}, {comprovante}</small>
                 </div>
                 
-                <button class="btn-salvar" onclick="salvarConfiguracoes()">💾 Salvar Todas Configurações</button>
+                <button class="btn-salvar" onclick="salvarConfiguracoes()">💾 Salvar Configurações</button>
             </div>
             
             <div class="table-container" style="margin-top: 20px;">
                 <h3>📥 Exportar Dados</h3>
-                <button class="btn-confirmar" onclick="exportarDados()">📥 Exportar Vendas Confirmadas (JSON)</button>
-                <button class="btn-confirmar" onclick="exportarCSV()">📊 Exportar para Excel (CSV)</button>
+                <button class="btn-confirmar" onclick="exportarDados()">📥 Exportar JSON</button>
+                <button class="btn-confirmar" onclick="exportarCSV()">📊 Exportar CSV</button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Modal Sorteio -->
-    <div id="modalSorteio" class="modal">
-        <div class="modal-content">
-            <h2>🎉 NÚMERO SORTEADO! 🎉</h2>
-            <div class="numero-sorteado" id="numeroSorteado"></div>
-            <div class="info-ganhador" id="infoGanhador"></div>
-            <button id="btnWhatsAppGanhador" class="btn-whatsapp" style="width: 100%;">📱 Enviar Mensagem para o Ganhador</button>
-            <button onclick="fecharModalSorteio()" style="margin-top: 10px; width: 100%;">Fechar</button>
-        </div>
+<!-- Modals -->
+<div id="modalSorteio" class="modal">
+    <div class="modal-content">
+        <h2>🎉 NÚMERO SORTEADO! 🎉</h2>
+        <div class="numero-sorteado" id="numeroSorteado"></div>
+        <div class="info-ganhador" id="infoGanhador"></div>
+        <button id="btnWhatsAppGanhador" class="btn-whatsapp" style="width: 100%;">📱 Enviar WhatsApp</button>
+        <button onclick="fecharModalSorteio()" style="margin-top: 10px;">Fechar</button>
     </div>
+</div>
 
-    <!-- Modal para visualizar QR Code -->
-    <div id="modalQR" class="modal">
-        <div class="modal-content">
-            <img id="qrImagem" src="" alt="QR Code" style="max-width: 100%;">
-            <button onclick="fecharModal()" style="margin-top: 10px;">Fechar</button>
-        </div>
+<div id="modalQR" class="modal">
+    <div class="modal-content">
+        <img id="qrImagem" src="" alt="QR Code" style="max-width: 100%;">
+        <button onclick="fecharModal()">Fechar</button>
     </div>
+</div>
 
-    <script>
-        let configAtual = {};
-        let ultimoGanhador = null;
+<script>
+    // 🔐 CONFIGURAÇÃO DA SENHA - MUDE AQUI PARA A SENHA QUE VOCÊ QUISER
+    const ADMIN_SENHA = 'admin123';
+    
+    let configAtual = {};
 
-        // Função para mostrar abas
-        function showTab(tabId) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            
-            if (tabId === 'dashboard') carregarDashboard();
-            if (tabId === 'vendas') carregarVendasPendentes();
-            if (tabId === 'sorteio') carregarTotalPagos();
-            if (tabId === 'historico') carregarHistoricoSorteios();
-            if (tabId === 'todos-numeros') carregarTodosNumeros();
-            if (tabId === 'configuracoes') carregarConfiguracoes();
+    // FUNÇÕES DE LOGIN
+    function fazerLogin() {
+        const senha = document.getElementById('senhaAdmin').value;
+        if (senha === ADMIN_SENHA) {
+            localStorage.setItem('adminLogado', 'true');
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainWrapper').style.display = 'block';
+            carregarDashboard();
+            carregarVendasPendentes();
+            carregarConfiguracoes();
+        } else {
+            document.getElementById('errorMsg').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('errorMsg').style.display = 'none';
+            }, 3000);
         }
+    }
 
-        // Carregar Dashboard
-        function carregarDashboard() {
-            fetch('/api/admin/dashboard')
-                .then(res => res.json())
-                .then(data => {
-                    const cards = `
-                        <div class="card primary"><h3>📊 Disponíveis</h3><div class="number">${data.disponiveis || 0}</div></div>
-                        <div class="card warning"><h3>⏳ Reservados</h3><div class="number">${data.reservados || 0}</div></div>
-                        <div class="card success"><h3>✅ Pagos</h3><div class="number">${data.pagos || 0}</div></div>
-                        <div class="card warning"><h3>💸 Pendentes</h3><div class="number">${data.pendentes || 0}</div></div>
-                        <div class="card success"><h3>💰 Confirmados</h3><div class="number">${data.confirmados || 0}</div></div>
-                        <div class="card primary"><h3>🏆 Total Arrecadado</h3><div class="number">R$ ${data.total_arrecadado || 0}</div></div>
-                    `;
-                    document.getElementById('dashboardCards').innerHTML = cards;
-                });
-            
-            fetch('/api/admin/vendas')
-                .then(res => res.json())
-                .then(vendas => {
-                    const tbody = document.querySelector('#ultimasVendas tbody');
-                    tbody.innerHTML = vendas.slice(0, 10).map(v => `
-                        <tr>
-                            <td>${v.numero}</td>
-                            <td>${v.nome}</td>
-                            <td>R$ ${v.valor_pago}</td>
-                            <td><span class="status-badge status-${v.status_pagamento}">${v.status_pagamento}</span></td>
-                            <td>${new Date(v.data_pedido).toLocaleDateString()}</td>
-                        </tr>
-                    `).join('');
-                });
+    function fazerLogout() {
+        localStorage.removeItem('adminLogado');
+        document.getElementById('loginOverlay').style.display = 'flex';
+        document.getElementById('mainWrapper').style.display = 'none';
+        document.getElementById('senhaAdmin').value = '';
+    }
+
+    function checkLogin() {
+        if (localStorage.getItem('adminLogado') === 'true') {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainWrapper').style.display = 'block';
+            carregarDashboard();
+            carregarVendasPendentes();
+            carregarConfiguracoes();
         }
+    }
 
-        // Carregar total de números pagos
-        function carregarTotalPagos() {
-            fetch('/api/admin/dashboard')
-                .then(res => res.json())
-                .then(data => {
-                    document.getElementById('totalPagos').textContent = data.pagos || 0;
-                });
+    // Função para adicionar token em todas as requisições
+    function getHeaders() {
+        return {
+            'Content-Type': 'application/json',
+            'admin-token': ADMIN_SENHA
+        };
+    }
+
+    function showTab(tabId) {
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        if (tabId === 'dashboard') carregarDashboard();
+        if (tabId === 'vendas') carregarVendasPendentes();
+        if (tabId === 'sorteio') carregarTotalPagos();
+        if (tabId === 'historico') carregarHistoricoSorteios();
+        if (tabId === 'todos-numeros') carregarTodosNumeros();
+        if (tabId === 'configuracoes') carregarConfiguracoes();
+    }
+
+    async function fetchWithAuth(url, options = {}) {
+        const response = await fetch(url, {
+            ...options,
+            headers: getHeaders()
+        });
+        if (response.status === 401) {
+            alert('Sessão expirada. Faça login novamente.');
+            fazerLogout();
+            return null;
         }
+        return response;
+    }
 
-        // Realizar sorteio
-        function realizarSorteio() {
-            if (confirm('🎲 Tem certeza que deseja realizar o sorteio?\n\nO número será escolhido aleatoriamente entre os pagos!')) {
-                fetch('/api/admin/sortear', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                })
+    function carregarDashboard() {
+        fetch('/api/admin/dashboard')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('dashboardCards').innerHTML = `
+                    <div class="card primary"><h3>📊 Disponíveis</h3><div class="number">${data.disponiveis || 0}</div></div>
+                    <div class="card warning"><h3>⏳ Reservados</h3><div class="number">${data.reservados || 0}</div></div>
+                    <div class="card success"><h3>✅ Pagos</h3><div class="number">${data.pagos || 0}</div></div>
+                    <div class="card primary"><h3>🏆 Total Arrecadado</h3><div class="number">R$ ${data.total_arrecadado || 0}</div></div>
+                `;
+            });
+        
+        fetch('/api/admin/vendas')
+            .then(res => res.json())
+            .then(vendas => {
+                const tbody = document.querySelector('#ultimasVendas tbody');
+                tbody.innerHTML = vendas.slice(0, 10).map(v => `
+                    <tr><td>${v.numero}</td><td>${v.nome}</td><td>R$ ${v.valor_pago}</td><td>${v.status_pagamento}</td><td>${new Date(v.data_pedido).toLocaleDateString()}</td></tr>
+                `).join('');
+            });
+    }
+
+    function carregarTotalPagos() {
+        fetch('/api/admin/dashboard')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('totalPagos').textContent = data.pagos || 0;
+            });
+    }
+
+    function realizarSorteio() {
+        if (confirm('🎲 Realizar sorteio?')) {
+            fetch('/api/admin/sortear', { method: 'POST', headers: { 'Content-Type': 'application/json' } })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        ultimoGanhador = data;
-                        
-                        // Mostrar modal
                         document.getElementById('numeroSorteado').textContent = data.numero;
                         document.getElementById('infoGanhador').innerHTML = `
                             <p><strong>🏆 Ganhador:</strong> ${data.nome}</p>
                             <p><strong>📱 WhatsApp:</strong> ${data.telefone}</p>
-                            <p><strong>📧 Email:</strong> ${data.email}</p>
-                            <p><strong>📅 Data da compra:</strong> ${new Date(data.data_compra).toLocaleString()}</p>
                         `;
-                        
-                        // Configurar botão WhatsApp
-                        const btnWhatsApp = document.getElementById('btnWhatsAppGanhador');
-                        const mensagemGanhador = configAtual.mensagemGanhador || 
-                            "🎉 PARABÉNS {nome}! 🎉\n\nVocê foi o GANHADOR da nossa rifa!\nNúmero sorteado: {numero}\n\nEntre em contato para receber seu prêmio! 🏆";
-                        
-                        const mensagem = mensagemGanhador
-                            .replace(/{nome}/g, data.nome)
-                            .replace(/{numero}/g, data.numero);
-                        
-                        const telefoneLimpo = data.telefone.replace(/\D/g, '');
-                        btnWhatsApp.onclick = () => {
-                            window.open(`https://wa.me/55${telefoneLimpo}?text=${encodeURIComponent(mensagem)}`, '_blank');
-                        };
-                        
                         document.getElementById('modalSorteio').style.display = 'flex';
-                        
-                        // Efeito de confete
-                        criarConfetes();
-                        
-                        // Recarregar dados
                         carregarDashboard();
                         carregarHistoricoSorteios();
                     } else {
-                        alert('❌ ' + data.error);
+                        alert('Erro: ' + data.error);
                     }
                 });
-            }
         }
+    }
 
-        // Efeito de confete
-        function criarConfetes() {
-            for (let i = 0; i < 100; i++) {
-                const confete = document.createElement('div');
-                confete.style.position = 'fixed';
-                confete.style.left = Math.random() * 100 + '%';
-                confete.style.top = '-10px';
-                confete.style.width = Math.random() * 10 + 5 + 'px';
-                confete.style.height = Math.random() * 10 + 5 + 'px';
-                confete.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
-                confete.style.borderRadius = '50%';
-                confete.style.pointerEvents = 'none';
-                confete.style.zIndex = '9999';
-                confete.style.animation = `cair ${Math.random() * 2 + 2}s linear forwards`;
-                document.body.appendChild(confete);
-                
-                setTimeout(() => confete.remove(), 3000);
-            }
+    function fecharModalSorteio() {
+        document.getElementById('modalSorteio').style.display = 'none';
+    }
+
+    function fecharModal() {
+        document.getElementById('modalQR').style.display = 'none';
+    }
+
+    function carregarHistoricoSorteios() {
+        fetch('/api/admin/historico-sorteios')
+            .then(res => res.json())
+            .then(sorteios => {
+                const tbody = document.querySelector('#tabelaHistorico tbody');
+                if (sorteios.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6">Nenhum sorteio</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = sorteios.map(s => `
+                    <tr>
+                        <td>${new Date(s.data_sorteio).toLocaleString()}</td>
+                        <td><strong>${s.numero}</strong></td>
+                        <td>${s.ganhador_nome}</td>
+                        <td>${s.ganhador_telefone}</td>
+                        <td>${s.ganhador_email}</td>
+                        <td><a href="https://wa.me/55${s.ganhador_telefone.replace(/\D/g, '')}" target="_blank" class="btn-whatsapp">WhatsApp</a></td>
+                    </tr>
+                `).join('');
+            });
+    }
+
+    function carregarVendasPendentes() {
+        fetch('/api/admin/vendas')
+            .then(res => res.json())
+            .then(vendas => {
+                const pendentes = vendas.filter(v => v.status_pagamento === 'pendente');
+                const tbody = document.querySelector('#tabelaVendas tbody');
+                tbody.innerHTML = pendentes.map(v => `
+                    <tr>
+                        <td><strong>${v.numero}</strong></td>
+                        <td>${v.nome}</td>
+                        <td>${v.telefone}</td>
+                        <td>${v.email}</td>
+                        <td>R$ ${v.valor_pago}</td>
+                        <td><code>${v.comprovante_codigo}</code><br><img src="${v.qr_code}" style="width:40px;cursor:pointer" onclick="verQR('${v.qr_code}')"></td>
+                        <td>
+                            <button class="btn-confirmar" onclick="confirmarPagamento('${v.id}', ${v.numero})">Confirmar</button>
+                            <button class="btn-cancelar" onclick="cancelarVenda('${v.id}', ${v.numero})">Cancelar</button>
+                        </td>
+                    </tr>
+                `).join('');
+            });
+    }
+
+    function carregarTodosNumeros() {
+        fetch('/api/admin/numeros')
+            .then(res => res.json())
+            .then(numeros => {
+                const tbody = document.querySelector('#tabelaNumeros tbody');
+                tbody.innerHTML = numeros.map(n => `
+                    <tr>
+                        <td><strong>${n.numero}</strong></td>
+                        <td>${n.status === 'disponivel' ? '🟢 Disponível' : n.status === 'reservado' ? '🟠 Reservado' : '✅ Pago'}</td>
+                        <td>${n.comprador_nome || '-'}</td>
+                        <td>${n.comprador_telefone || '-'}</td>
+                        <td>${n.data_reserva ? new Date(n.data_reserva).toLocaleString() : '-'}</td>
+                    </tr>
+                `).join('');
+            });
+    }
+
+    function verQR(qrCodeUrl) {
+        document.getElementById('qrImagem').src = qrCodeUrl;
+        document.getElementById('modalQR').style.display = 'flex';
+    }
+
+    function confirmarPagamento(vendaId, numero) {
+        if (confirm(`Confirmar pagamento do número ${numero}?`)) {
+            fetch('/api/admin/confirmar-pagamento', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ venda_id: vendaId, numero: numero })
+            }).then(() => {
+                alert('✅ Confirmado!');
+                carregarVendasPendentes();
+                carregarDashboard();
+                carregarTodosNumeros();
+            });
         }
+    }
 
-        // Adicionar CSS da animação
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes cair {
-                0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-                100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Carregar histórico de sorteios
-        function carregarHistoricoSorteios() {
-            fetch('/api/admin/historico-sorteios')
-                .then(res => res.json())
-                .then(sorteios => {
-                    const tbody = document.querySelector('#tabelaHistorico tbody');
-                    if (sorteios.length === 0) {
-                        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">Nenhum sorteio realizado ainda</td></tr>';
-                        return;
-                    }
-                    
-                    tbody.innerHTML = sorteios.map(s => `
-                        <tr>
-                            <td>${new Date(s.data_sorteio).toLocaleString()}</td>
-                            <td><strong>${s.numero}</strong></td>
-                            <td>${s.ganhador_nome}</td>
-                            <td>${s.ganhador_telefone}</td>
-                            <td>${s.ganhador_email}</td>
-                            <td>
-                                <a href="https://wa.me/55${s.ganhador_telefone.replace(/\D/g, '')}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
-                            </td>
-                        </tr>
-                    `).join('');
-                });
+    function cancelarVenda(vendaId, numero) {
+        if (confirm(`Cancelar venda do número ${numero}?`)) {
+            fetch('/api/admin/cancelar-venda', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ venda_id: vendaId, numero: numero })
+            }).then(() => {
+                alert('❌ Cancelado!');
+                carregarVendasPendentes();
+                carregarDashboard();
+                carregarTodosNumeros();
+            });
         }
+    }
 
-        // Carregar Vendas Pendentes
-        function carregarVendasPendentes() {
-            fetch('/api/admin/vendas')
-                .then(res => res.json())
-                .then(vendas => {
-                    const pendentes = vendas.filter(v => v.status_pagamento === 'pendente');
-                    const tbody = document.querySelector('#tabelaVendas tbody');
-                    tbody.innerHTML = pendentes.map(v => {
-                        const telefoneLimpo = v.telefone.replace(/\D/g, '');
-                        const mensagem = configAtual.mensagemWhatsApp || 
-                            "Olá {nome}!\n\n✅ Seu pagamento da rifa foi CONFIRMADO!\nNúmero: {numero}\n\nBoa sorte! 🍀";
-                        const msgFormatada = mensagem.replace(/{nome}/g, v.nome).replace(/{numero}/g, v.numero);
-                        const linkWhatsApp = `https://wa.me/55${telefoneLimpo}?text=${encodeURIComponent(msgFormatada)}`;
-                        
-                        return `
-                            <tr>
-                                <td><strong>${v.numero}</strong></td>
-                                <td>${v.nome}</td>
-                                <td>${v.telefone}</td>
-                                <td>${v.email}</td>
-                                <td>R$ ${v.valor_pago}</td>
-                                <td>
-                                    <code style="font-size: 0.8em;">${v.comprovante_codigo}</code><br>
-                                    <img src="${v.qr_code}" style="width: 50px; margin-top: 5px; cursor: pointer;" onclick="verQR('${v.qr_code}')">
-                                </td>
-                                <td>
-                                    <button class="btn-confirmar" onclick="confirmarPagamento('${v.id}', ${v.numero})">✅ Confirmar</button>
-                                    <button class="btn-cancelar" onclick="cancelarVenda('${v.id}', ${v.numero})">❌ Cancelar</button>
-                                    <a href="${linkWhatsApp}" target="_blank" class="btn-whatsapp">💬 WhatsApp</a>
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
-                });
-        }
+    function carregarConfiguracoes() {
+        fetch('/api/admin/configuracoes')
+            .then(res => res.json())
+            .then(config => {
+                configAtual = config;
+                document.getElementById('nomeRifa').value = config.nome_rifa || '';
+                document.getElementById('descricaoRifa').value = config.descricao_rifa || '';
+                document.getElementById('valorRifa').value = config.valor_rifa || '';
+                document.getElementById('chavePix').value = config.chave_pix || '';
+                document.getElementById('adminWhatsapp').value = config.admin_whatsapp || '';
+                document.getElementById('mensagemBoasVindas').value = config.mensagem_boas_vindas || '';
+                document.getElementById('instrucoesPagamento').value = config.instrucoes_pagamento || '';
+                document.getElementById('rodapeComprovante').value = config.rodape_comprovante || '';
+                document.getElementById('mensagemWhatsApp').value = config.mensagem_whatsapp || '';
+                document.getElementById('mensagemGanhador').value = config.mensagem_ganhador || '';
+                atualizarPreview();
+            });
+    }
 
-        // Carregar todos números
-        function carregarTodosNumeros() {
-            fetch('/api/admin/numeros')
-                .then(res => res.json())
-                .then(numeros => {
-                    const tbody = document.querySelector('#tabelaNumeros tbody');
-                    tbody.innerHTML = numeros.map(n => {
-                        let statusText = '';
-                        let statusClass = '';
-                        if (n.status === 'disponivel') {
-                            statusText = '🟢 Disponível';
-                            statusClass = 'status-disponivel';
-                        } else if (n.status === 'reservado') {
-                            statusText = '🟠 Reservado';
-                            statusClass = 'status-reservado';
-                        } else {
-                            statusText = '✅ Pago';
-                            statusClass = 'status-pago';
-                        }
-                        
-                        return `
-                            <tr>
-                                <td><strong>${n.numero}</strong></td>
-                                <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-                                <td>${n.comprador_nome || '-'}</td>
-                                <td>${n.comprador_telefone || '-'}</td>
-                                <td>${n.data_reserva ? new Date(n.data_reserva).toLocaleString() : '-'}</td>
-                            </tr>
-                        `;
-                    }).join('');
-                });
-        }
-
-        // Confirmar pagamento
-        function confirmarPagamento(vendaId, numero) {
-            if (confirm(`Confirmar pagamento do número ${numero}?`)) {
-                fetch('/api/admin/confirmar-pagamento', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ venda_id: vendaId, numero: numero })
-                })
-                .then(res => res.json())
-                .then(() => {
-                    alert('✅ Pagamento confirmado!');
-                    carregarVendasPendentes();
-                    carregarDashboard();
-                    carregarTodosNumeros();
-                });
-            }
-        }
-
-        // Cancelar venda
-        function cancelarVenda(vendaId, numero) {
-            if (confirm(`Cancelar venda do número ${numero}? O número será liberado novamente.`)) {
-                fetch('/api/admin/cancelar-venda', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ venda_id: vendaId, numero: numero })
-                })
-                .then(res => res.json())
-                .then(() => {
-                    alert('❌ Venda cancelada! Número liberado.');
-                    carregarVendasPendentes();
-                    carregarDashboard();
-                    carregarTodosNumeros();
-                });
-            }
-        }
-
-        // Carregar configurações
-        function carregarConfiguracoes() {
-            fetch('/api/admin/configuracoes')
-                .then(res => res.json())
-                .then(config => {
-                    configAtual = config;
-                    
-                    document.getElementById('nomeRifa').value = config.nome_rifa || 'MEGA RIFA PREMIUM';
-                    document.getElementById('descricaoRifa').value = config.descricao_rifa || '🏆 Prêmio: R$ 10.000,00 + Moto 0km';
-                    document.getElementById('valorRifa').value = config.valor_rifa || '10.00';
-                    document.getElementById('chavePix').value = config.chave_pix || 'admin@rifa.com';
-                    document.getElementById('adminWhatsapp').value = config.admin_whatsapp || '55999999999';
-                    document.getElementById('mensagemBoasVindas').value = config.mensagem_boas_vindas || 'Obrigado por participar da nossa rifa!';
-                    document.getElementById('instrucoesPagamento').value = config.instrucoes_pagamento || '1. Faça o PIX para a chave acima\n2. Envie o comprovante para o administrador\n3. Aguarde a confirmação';
-                    document.getElementById('rodapeComprovante').value = config.rodape_comprovante || 'Boa sorte! 🍀\nSorteio ao atingir 100 números vendidos';
-                    document.getElementById('mensagemWhatsApp').value = config.mensagem_whatsapp || 'Olá {nome}!\n\n✅ Seu pagamento da rifa foi CONFIRMADO!\nNúmero: {numero}\n\nBoa sorte! 🍀';
-                    document.getElementById('mensagemGanhador').value = config.mensagem_ganhador || '🎉 PARABÉNS {nome}! 🎉\n\nVocê foi o GANHADOR da nossa rifa!\nNúmero sorteado: {numero}\n\nEntre em contato para receber seu prêmio! 🏆';
-                    
-                    atualizarPreviewComprovante();
-                });
-        }
-
-        // Atualizar prévia do comprovante
-        function atualizarPreviewComprovante() {
-            const preview = document.getElementById('previewComprovante');
-            const nomeRifa = document.getElementById('nomeRifa').value || 'Nome da Rifa';
-            const descricao = document.getElementById('descricaoRifa').value || 'Descrição';
-            const valor = document.getElementById('valorRifa').value || '10.00';
-            const boasVindas = document.getElementById('mensagemBoasVindas').value || '';
-            const instrucoes = document.getElementById('instrucoesPagamento').value || '';
-            const rodape = document.getElementById('rodapeComprovante').value || '';
-            
+    function atualizarPreview() {
+        const preview = document.getElementById('previewComprovante');
+        if (preview) {
             preview.innerHTML = `
-                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px;">
-                    <h3>🎫 ${nomeRifa}</h3>
-                    <p>${descricao}</p>
+                <div style="border:1px solid #ddd;padding:15px;border-radius:8px">
+                    <h3>🎫 ${document.getElementById('nomeRifa').value || 'Rifa'}</h3>
+                    <p>${document.getElementById('descricaoRifa').value || ''}</p>
                     <hr>
                     <p><strong>Número:</strong> 42</p>
-                    <p><strong>Valor:</strong> R$ ${valor}</p>
-                    <p><strong>Código:</strong> RIFA-42-ABC123</p>
+                    <p><strong>Valor:</strong> R$ ${document.getElementById('valorRifa').value || '0'}</p>
                     <hr>
-                    <p>${boasVindas}</p>
-                    <p>${instrucoes.replace(/\n/g, '<br>')}</p>
+                    <p>${(document.getElementById('mensagemBoasVindas').value || '').replace(/\n/g, '<br>')}</p>
+                    <p>${(document.getElementById('instrucoesPagamento').value || '').replace(/\n/g, '<br>')}</p>
                     <hr>
-                    <p>${rodape.replace(/\n/g, '<br>')}</p>
+                    <p>${(document.getElementById('rodapeComprovante').value || '').replace(/\n/g, '<br>')}</p>
                 </div>
             `;
         }
+    }
 
-        // Salvar configurações
-        function salvarConfiguracoes() {
-            const config = {
-                nome_rifa: document.getElementById('nomeRifa').value,
-                descricao_rifa: document.getElementById('descricaoRifa').value,
-                valor_rifa: document.getElementById('valorRifa').value,
-                chave_pix: document.getElementById('chavePix').value,
-                admin_whatsapp: document.getElementById('adminWhatsapp').value,
-                mensagem_boas_vindas: document.getElementById('mensagemBoasVindas').value,
-                instrucoes_pagamento: document.getElementById('instrucoesPagamento').value,
-                rodape_comprovante: document.getElementById('rodapeComprovante').value,
-                mensagem_whatsapp: document.getElementById('mensagemWhatsApp').value,
-                mensagem_ganhador: document.getElementById('mensagemGanhador').value
-            };
-            
-            fetch('/api/admin/configuracoes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(config)
-            })
+    function salvarConfiguracoes() {
+        const config = {
+            nome_rifa: document.getElementById('nomeRifa').value,
+            descricao_rifa: document.getElementById('descricaoRifa').value,
+            valor_rifa: document.getElementById('valorRifa').value,
+            chave_pix: document.getElementById('chavePix').value,
+            admin_whatsapp: document.getElementById('adminWhatsapp').value,
+            mensagem_boas_vindas: document.getElementById('mensagemBoasVindas').value,
+            instrucoes_pagamento: document.getElementById('instrucoesPagamento').value,
+            rodape_comprovante: document.getElementById('rodapeComprovante').value,
+            mensagem_whatsapp: document.getElementById('mensagemWhatsApp').value,
+            mensagem_ganhador: document.getElementById('mensagemGanhador').value
+        };
+        
+        fetch('/api/admin/configuracoes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(config)
+        }).then(() => {
+            alert('✅ Configurações salvas!');
+        });
+    }
+
+    function exportarDados() {
+        fetch('/api/admin/exportar')
             .then(res => res.json())
-            .then(() => {
-                alert('✅ Configurações salvas com sucesso!');
-                configAtual = config;
+            .then(data => {
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `vendas_${new Date().toISOString()}.json`;
+                a.click();
             });
-        }
+    }
 
-        // Exportar para JSON
-        function exportarDados() {
-            fetch('/api/admin/exportar')
-                .then(res => res.json())
-                .then(data => {
-                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `vendas_confirmadas_${new Date().toISOString()}.json`;
-                    a.click();
+    function exportarCSV() {
+        fetch('/api/admin/exportar')
+            .then(res => res.json())
+            .then(data => {
+                if (data.length === 0) {
+                    alert('Nenhuma venda');
+                    return;
+                }
+                const headers = ['Número', 'Nome', 'Telefone', 'Email', 'Valor'];
+                const csvRows = [headers];
+                data.forEach(row => {
+                    csvRows.push([row.numero, row.nome, row.telefone, row.email, row.valor_pago]);
                 });
-        }
+                const csvContent = csvRows.map(row => row.join(',')).join('\n');
+                const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `vendas_${new Date().toISOString()}.csv`;
+                a.click();
+            });
+    }
 
-        // Exportar para CSV
-        function exportarCSV() {
-            fetch('/api/admin/exportar')
-                .then(res => res.json())
-                .then(data => {
-                    if (data.length === 0) {
-                        alert('Nenhuma venda confirmada para exportar!');
-                        return;
-                    }
-                    
-                    const headers = ['Número', 'Nome', 'Telefone', 'Email', 'Valor', 'Data Pedido', 'Data Pagamento', 'Comprovante'];
-                    const csvRows = [headers];
-                    
-                    data.forEach(row => {
-                        csvRows.push([
-                            row.numero,
-                            row.nome,
-                            row.telefone,
-                            row.email,
-                            row.valor_pago,
-                            new Date(row.data_pedido).toLocaleString(),
-                            row.data_pagamento ? new Date(row.data_pagamento).toLocaleString() : '-',
-                            row.comprovante_codigo
-                        ]);
-                    });
-                    
-                    const csvContent = csvRows.map(row => row.join(',')).join('\n');
-                    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `vendas_confirmadas_${new Date().toISOString()}.csv`;
-                    a.click();
-                });
-        }
+    // Event listeners para preview
+    document.getElementById('nomeRifa')?.addEventListener('input', atualizarPreview);
+    document.getElementById('descricaoRifa')?.addEventListener('input', atualizarPreview);
+    document.getElementById('valorRifa')?.addEventListener('input', atualizarPreview);
+    document.getElementById('mensagemBoasVindas')?.addEventListener('input', atualizarPreview);
+    document.getElementById('instrucoesPagamento')?.addEventListener('input', atualizarPreview);
+    document.getElementById('rodapeComprovante')?.addEventListener('input', atualizarPreview);
 
-        // Ver QR Code
-        function verQR(qrCodeUrl) {
-            document.getElementById('qrImagem').src = qrCodeUrl;
-            document.getElementById('modalQR').style.display = 'flex';
-        }
-
-        function fecharModal() {
-            document.getElementById('modalQR').style.display = 'none';
-        }
-
-        function fecharModalSorteio() {
-            document.getElementById('modalSorteio').style.display = 'none';
-        }
-
-        // Adicionar listeners para preview
-        document.getElementById('nomeRifa')?.addEventListener('input', atualizarPreviewComprovante);
-        document.getElementById('descricaoRifa')?.addEventListener('input', atualizarPreviewComprovante);
-        document.getElementById('valorRifa')?.addEventListener('input', atualizarPreviewComprovante);
-        document.getElementById('mensagemBoasVindas')?.addEventListener('input', atualizarPreviewComprovante);
-        document.getElementById('instrucoesPagamento')?.addEventListener('input', atualizarPreviewComprovante);
-        document.getElementById('rodapeComprovante')?.addEventListener('input', atualizarPreviewComprovante);
-
-        // Inicializar
-        carregarDashboard();
-    </script>
+    checkLogin();
+</script>
 </body>
 </html>
