@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname, 'views')));
 // 🔴 CONFIGURAÇÃO DO BANCO - COLOQUE SUA SENHA AQUI!
 // ============================================
 const DB_CONFIG = {
-    host: 'localhost',
+   host: '127.0.0.1',  // ou 'mysql.hostinger.com',
     user: 'u519611382_rifa',
     password: '21@Brasil21',  // 🔴🔴🔴 MUDE AQUI 🔴🔴🔴
     database: 'u519611382_rifa',
