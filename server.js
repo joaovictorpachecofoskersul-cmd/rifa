@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const path = require('path');
-const mysql = require('mysql2/promise');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,22 +14,116 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'views')));
 
 // ============================================
-// CONFIGURAÇÃO DO BANCO
+// ARQUIVOS DE DADOS (JSON)
 // ============================================
-const DB_CONFIG = {
-    host: 'localhost',
-    user: 'u519611382_rifa',
-    password: '21@Brasil21',
-    database: 'u519611382_rifa',
-    waitForConnections: true,
-    connectionLimit: 5,
-    connectTimeout: 10000
-};
+const DATA_DIR = path.join(__dirname, 'data');
+const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+const NUMEROS_FILE = path.join(DATA_DIR, 'numeros.json');
+const VENDAS_FILE = path.join(DATA_DIR, 'vendas.json');
+const SORTEIOS_FILE = path.join(DATA_DIR, 'sorteios.json');
 
 const ADMIN_PASSWORD = 'admin123';
 
-let pool;
-let dbConnected = false;
+// Garantir que a pasta data existe
+if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR);
+}
+
+// ============================================
+// FUNÇÕES DE LEITURA/ESCRITA
+// ============================================
+
+// Carregar configurações
+function loadConfig() {
+    try {
+        if (fs.existsSync(CONFIG_FILE)) {
+            return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+        }
+    } catch (e) {}
+    
+    // Configuração padrão
+    return {
+        id: 1,
+        nome_rifa: 'MEGA RIFA PREMIUM',
+        descricao_rifa: '🏆 Prêmio: R$ 10.000,00 + Moto 0km',
+        valor_rifa: 10.00,
+        chave_pix: 'admin@rifa.com',
+        admin_whatsapp: '55999999999',
+        rifa_ativa: 'true',
+        ultimo_ganhador: '',
+        ultimo_ganhador_numero: '',
+        imagem_rifa: '',
+        cor_principal: '#667eea',
+        cor_secundaria: '#764ba2',
+        mensagem_boas_vindas: 'Obrigado por participar da nossa rifa!',
+        instrucoes_pagamento: '1. Faça o PIX para a chave acima\n2. Envie o comprovante\n3. Aguarde a confirmação',
+        rodape_comprovante: 'Boa sorte! 🍀\nSorteio ao atingir 100 números',
+        mensagem_whatsapp: 'Olá {nome}!\n✅ Pagamento CONFIRMADO!\nNúmero: {numero}\nBoa sorte! 🍀',
+        mensagem_ganhador: '🎉 PARABÉNS {nome}!\nNúmero: {numero}\nEntre em contato! 🏆'
+    };
+}
+
+function saveConfig(config) {
+    fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
+
+// Carregar números
+function loadNumeros() {
+    try {
+        if (fs.existsSync(NUMEROS_FILE)) {
+            return JSON.parse(fs.readFileSync(NUMEROS_FILE, 'utf8'));
+        }
+    } catch (e) {}
+    
+    // Criar números de 1 a 100
+    const numeros = [];
+    for (let i = 1; i <= 100; i++) {
+        numeros.push({
+            numero: i,
+            status: 'disponivel',
+            comprador_nome: null,
+            comprador_telefone: null,
+            comprador_email: null,
+            comprovante_codigo: null,
+            data_reserva: null,
+            data_confirmacao: null
+        });
+    }
+    saveNumeros(numeros);
+    return numeros;
+}
+
+function saveNumeros(numeros) {
+    fs.writeFileSync(NUMEROS_FILE, JSON.stringify(numeros, null, 2));
+}
+
+// Carregar vendas
+function loadVendas() {
+    try {
+        if (fs.existsSync(VENDAS_FILE)) {
+            return JSON.parse(fs.readFileSync(VENDAS_FILE, 'utf8'));
+        }
+    } catch (e) {}
+    return [];
+}
+
+function saveVendas(vendas) {
+    fs.writeFileSync(VENDAS_FILE, JSON.stringify(vendas, null, 2));
+}
+
+// Carregar sorteios
+function loadSorteios() {
+    try {
+        if (fs.existsSync(SORTEIOS_FILE)) {
+            return JSON.parse(fs.readFileSync(SORTEIOS_FILE, 'utf8'));
+        }
+    } catch (e) {}
+    return [];
+}
+
+function saveSorteios(sorteios) {
+    fs.writeFileSync(SORTEIOS_FILE, JSON.stringify(sorteios, null, 2));
+}
 
 // ============================================
 // AUTENTICAÇÃO ADMIN
@@ -44,182 +138,15 @@ function authAdmin(req, res, next) {
 }
 
 // ============================================
-// INICIALIZAR BANCO DE DADOS
-// ============================================
-async function initDatabase() {
-    try {
-        console.log('🔄 Conectando ao MySQL...');
-        pool = mysql.createPool(DB_CONFIG);
-        
-        const connection = await pool.getConnection();
-        console.log('✅ MySQL conectado!');
-        
-        // Criar tabela de configurações
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS configuracoes (
-                id INT PRIMARY KEY DEFAULT 1,
-                nome_rifa VARCHAR(255) DEFAULT 'MEGA RIFA PREMIUM',
-                descricao_rifa TEXT DEFAULT '🏆 Prêmio: R$ 10.000,00 + Moto 0km',
-                valor_rifa DECIMAL(10,2) DEFAULT 10.00,
-                chave_pix VARCHAR(255) DEFAULT 'admin@rifa.com',
-                admin_whatsapp VARCHAR(50) DEFAULT '55999999999',
-                rifa_ativa VARCHAR(10) DEFAULT 'true',
-                ultimo_ganhador VARCHAR(255) DEFAULT '',
-                ultimo_ganhador_numero VARCHAR(50) DEFAULT '',
-                imagem_rifa TEXT,
-                cor_principal VARCHAR(50) DEFAULT '#667eea',
-                cor_secundaria VARCHAR(50) DEFAULT '#764ba2',
-                mensagem_boas_vindas TEXT DEFAULT 'Obrigado por participar da nossa rifa!',
-                instrucoes_pagamento TEXT DEFAULT '1. Faça o PIX para a chave acima\\n2. Envie o comprovante\\n3. Aguarde a confirmação',
-                rodape_comprovante TEXT DEFAULT 'Boa sorte! 🍀\\nSorteio ao atingir 100 números',
-                mensagem_whatsapp TEXT DEFAULT 'Olá {nome}!\\n✅ Pagamento CONFIRMADO!\\nNúmero: {numero}\\nBoa sorte! 🍀',
-                mensagem_ganhador TEXT DEFAULT '🎉 PARABÉNS {nome}!\\nNúmero: {numero}\\nEntre em contato! 🏆'
-            )
-        `);
-        
-        // Criar tabela de números
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS numeros (
-                numero INT PRIMARY KEY,
-                status ENUM('disponivel', 'reservado', 'pago') DEFAULT 'disponivel',
-                comprador_nome VARCHAR(255),
-                comprador_telefone VARCHAR(50),
-                comprador_email VARCHAR(255),
-                comprovante_codigo VARCHAR(100),
-                data_reserva DATETIME,
-                data_confirmacao DATETIME
-            )
-        `);
-        
-        // Criar tabela de vendas
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS vendas (
-                id VARCHAR(100) PRIMARY KEY,
-                numero INT,
-                nome VARCHAR(255),
-                telefone VARCHAR(50),
-                email VARCHAR(255),
-                comprovante_codigo VARCHAR(100),
-                qr_code TEXT,
-                status_pagamento ENUM('pendente', 'confirmado', 'cancelado') DEFAULT 'pendente',
-                valor_pago DECIMAL(10,2),
-                data_pedido DATETIME,
-                data_pagamento DATETIME
-            )
-        `);
-        
-        // Criar tabela de sorteios
-        await connection.execute(`
-            CREATE TABLE IF NOT EXISTS sorteios (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                numero INT,
-                ganhador_nome VARCHAR(255),
-                ganhador_telefone VARCHAR(50),
-                ganhador_email VARCHAR(255),
-                data_sorteio DATETIME
-            )
-        `);
-        
-        // ============================================
-        // 🔴 PARTE MAIS IMPORTANTE: INSERIR NÚMEROS
-        // ============================================
-        
-        // Verificar quantos números existem
-        const [existingNumbers] = await connection.execute('SELECT COUNT(*) as total FROM numeros');
-        console.log(`📊 Números existentes no banco: ${existingNumbers[0].total}`);
-        
-        if (existingNumbers[0].total === 0) {
-            console.log('📝 Inserindo números de 1 a 100...');
-            
-            // Inserir números de 1 a 100
-            for (let i = 1; i <= 100; i++) {
-                await connection.execute(
-                    'INSERT INTO numeros (numero, status) VALUES (?, "disponivel")',
-                    [i]
-                );
-            }
-            console.log('✅ 100 números inseridos com sucesso!');
-        } else if (existingNumbers[0].total < 100) {
-            // Se tem menos de 100, completa os que faltam
-            console.log(`⚠️ Apenas ${existingNumbers[0].total} números encontrados. Completando...`);
-            for (let i = 1; i <= 100; i++) {
-                const [check] = await connection.execute('SELECT * FROM numeros WHERE numero = ?', [i]);
-                if (check.length === 0) {
-                    await connection.execute('INSERT INTO numeros (numero, status) VALUES (?, "disponivel")', [i]);
-                }
-            }
-            console.log('✅ Números completados!');
-        }
-        
-        // Verificar novamente
-        const [finalCount] = await connection.execute('SELECT COUNT(*) as total FROM numeros');
-        console.log(`✅ Total final de números no banco: ${finalCount[0].total}`);
-        
-        // Inserir configuração padrão se não existir
-        const [configExists] = await connection.execute('SELECT COUNT(*) as total FROM configuracoes WHERE id = 1');
-        if (configExists[0].total === 0) {
-            await connection.execute(`INSERT INTO configuracoes (id) VALUES (1)`);
-            console.log('✅ Configuração padrão inserida');
-        }
-        
-        connection.release();
-        dbConnected = true;
-        console.log('✅ Banco de dados pronto e números cadastrados!');
-        return true;
-        
-    } catch (error) {
-        console.error('❌ Erro no MySQL:', error.message);
-        dbConnected = false;
-        return false;
-    }
-}
-
-// ============================================
-// MIDDLEWARE PARA VERIFICAR BANCO
-// ============================================
-async function checkDB(req, res, next) {
-    if (!dbConnected) {
-        return res.status(503).json({ error: 'Banco de dados não disponível. Tente novamente.' });
-    }
-    next();
-}
-
-// ============================================
-// FUNÇÕES DE ACESSO AO BANCO
-// ============================================
-
-async function getConfig() {
-    if (!dbConnected) return {};
-    const [rows] = await pool.execute('SELECT * FROM configuracoes WHERE id = 1');
-    return rows[0] || {};
-}
-
-async function updateConfig(config) {
-    if (!dbConnected) return;
-    await pool.execute('UPDATE configuracoes SET ? WHERE id = 1', [config]);
-}
-
-async function getNumeros() {
-    if (!dbConnected) return [];
-    const [rows] = await pool.execute('SELECT * FROM numeros ORDER BY numero');
-    return rows;
-}
-
-async function updateNumero(numero, data) {
-    if (!dbConnected) return;
-    await pool.execute('UPDATE numeros SET ? WHERE numero = ?', [data, numero]);
-}
-
-// ============================================
 // ROTAS PÚBLICAS
 // ============================================
 
-app.get('/api/numeros', checkDB, async (req, res) => {
+app.get('/api/numeros', (req, res) => {
     try {
-        const config = await getConfig();
-        const numeros = await getNumeros();
+        const config = loadConfig();
+        const numeros = loadNumeros();
         
-        console.log(`📊 Enviando ${numeros.length} números para o cliente`);
+        console.log(`📊 Enviando ${numeros.length} números`);
         
         res.json({
             rifa_ativa: config.rifa_ativa === 'true',
@@ -229,14 +156,14 @@ app.get('/api/numeros', checkDB, async (req, res) => {
             }))
         });
     } catch (error) {
-        console.error('Erro em /api/numeros:', error);
+        console.error('Erro:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
-app.get('/api/configuracoes', checkDB, async (req, res) => {
+app.get('/api/configuracoes', (req, res) => {
     try {
-        const config = await getConfig();
+        const config = loadConfig();
         const configPublica = {
             nome_rifa: config.nome_rifa,
             descricao_rifa: config.descricao_rifa,
@@ -259,25 +186,25 @@ app.get('/api/configuracoes', checkDB, async (req, res) => {
     }
 });
 
-app.get('/api/ultimo-sorteio', checkDB, async (req, res) => {
+app.get('/api/ultimo-sorteio', (req, res) => {
     try {
-        const [rows] = await pool.execute('SELECT * FROM sorteios ORDER BY data_sorteio DESC LIMIT 1');
-        res.json(rows[0] || null);
+        const sorteios = loadSorteios();
+        res.json(sorteios[sorteios.length - 1] || null);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.post('/api/reservar', checkDB, async (req, res) => {
+app.post('/api/reservar', async (req, res) => {
     try {
         const { numero, nome, telefone, email } = req.body;
-        const config = await getConfig();
+        const config = loadConfig();
 
         if (config.rifa_ativa === 'false') {
             return res.status(400).json({ error: 'Rifa finalizada!' });
         }
 
-        const numeros = await getNumeros();
+        let numeros = loadNumeros();
         const numeroObj = numeros.find(n => n.numero === numero);
         
         if (!numeroObj || numeroObj.status !== 'disponivel') {
@@ -289,20 +216,31 @@ app.post('/api/reservar', checkDB, async (req, res) => {
         const qrCodeDataUrl = await QRCode.toDataURL(comprovanteCodigo);
         const valorRifa = parseFloat(config.valor_rifa);
 
-        await updateNumero(numero, {
-            status: 'reservado',
-            comprador_nome: nome,
-            comprador_telefone: telefone,
-            comprador_email: email,
-            comprovante_codigo: comprovanteCodigo,
-            data_reserva: new Date()
-        });
+        // Atualizar número
+        numeroObj.status = 'reservado';
+        numeroObj.comprador_nome = nome;
+        numeroObj.comprador_telefone = telefone;
+        numeroObj.comprador_email = email;
+        numeroObj.comprovante_codigo = comprovanteCodigo;
+        numeroObj.data_reserva = new Date().toISOString();
+        saveNumeros(numeros);
 
-        await pool.execute(
-            `INSERT INTO vendas (id, numero, nome, telefone, email, comprovante_codigo, qr_code, status_pagamento, valor_pago, data_pedido)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pendente', ?, ?)`,
-            [comprovanteId, numero, nome, telefone, email, comprovanteCodigo, qrCodeDataUrl, valorRifa, new Date()]
-        );
+        // Salvar venda
+        const vendas = loadVendas();
+        vendas.push({
+            id: comprovanteId,
+            numero: numero,
+            nome: nome,
+            telefone: telefone,
+            email: email,
+            comprovante_codigo: comprovanteCodigo,
+            qr_code: qrCodeDataUrl,
+            status_pagamento: 'pendente',
+            valor_pago: valorRifa,
+            data_pedido: new Date().toISOString(),
+            data_pagamento: null
+        });
+        saveVendas(vendas);
 
         res.json({
             success: true,
@@ -318,26 +256,26 @@ app.post('/api/reservar', checkDB, async (req, res) => {
             rodape_comprovante: config.rodape_comprovante
         });
     } catch (error) {
-        console.error('Erro em /api/reservar:', error);
+        console.error('Erro:', error);
         res.status(500).json({ error: error.message });
     }
 });
 
 // ============================================
-// ROTAS ADMIN (COM AUTENTICAÇÃO)
+// ROTAS ADMIN
 // ============================================
 
-app.get('/api/admin/dashboard', checkDB, authAdmin, async (req, res) => {
+app.get('/api/admin/dashboard', authAdmin, (req, res) => {
     try {
-        const numeros = await getNumeros();
-        const [vendasRows] = await pool.execute('SELECT * FROM vendas');
+        const numeros = loadNumeros();
+        const vendas = loadVendas();
         
         const disponiveis = numeros.filter(n => n.status === 'disponivel').length;
         const reservados = numeros.filter(n => n.status === 'reservado').length;
         const pagos = numeros.filter(n => n.status === 'pago').length;
-        const pendentes = vendasRows.filter(v => v.status_pagamento === 'pendente').length;
-        const confirmados = vendasRows.filter(v => v.status_pagamento === 'confirmado').length;
-        const total_arrecadado = vendasRows.filter(v => v.status_pagamento === 'confirmado').reduce((sum, v) => sum + parseFloat(v.valor_pago), 0);
+        const pendentes = vendas.filter(v => v.status_pagamento === 'pendente').length;
+        const confirmados = vendas.filter(v => v.status_pagamento === 'confirmado').length;
+        const total_arrecadado = vendas.filter(v => v.status_pagamento === 'confirmado').reduce((sum, v) => sum + parseFloat(v.valor_pago), 0);
 
         res.json({ disponiveis, reservados, pagos, pendentes, confirmados, total_arrecadado });
     } catch (error) {
@@ -345,30 +283,45 @@ app.get('/api/admin/dashboard', checkDB, authAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/admin/vendas', checkDB, authAdmin, async (req, res) => {
+app.get('/api/admin/vendas', authAdmin, (req, res) => {
     try {
-        const [rows] = await pool.execute("SELECT * FROM vendas WHERE status_pagamento = 'pendente'");
-        res.json(rows);
+        const vendas = loadVendas();
+        res.json(vendas.filter(v => v.status_pagamento === 'pendente'));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.get('/api/admin/numeros', checkDB, authAdmin, async (req, res) => {
+app.get('/api/admin/numeros', authAdmin, (req, res) => {
     try {
-        const numeros = await getNumeros();
+        const numeros = loadNumeros();
         res.json(numeros);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.post('/api/admin/confirmar-pagamento', checkDB, authAdmin, async (req, res) => {
+app.post('/api/admin/confirmar-pagamento', authAdmin, (req, res) => {
     try {
         const { venda_id, numero } = req.body;
         
-        await pool.execute('UPDATE vendas SET status_pagamento = "confirmado", data_pagamento = ? WHERE id = ?', [new Date(), venda_id]);
-        await updateNumero(numero, { status: 'pago', data_confirmacao: new Date() });
+        // Atualizar venda
+        let vendas = loadVendas();
+        const vendaIndex = vendas.findIndex(v => v.id === venda_id);
+        if (vendaIndex !== -1) {
+            vendas[vendaIndex].status_pagamento = 'confirmado';
+            vendas[vendaIndex].data_pagamento = new Date().toISOString();
+            saveVendas(vendas);
+        }
+        
+        // Atualizar número
+        let numeros = loadNumeros();
+        const numeroObj = numeros.find(n => n.numero === numero);
+        if (numeroObj) {
+            numeroObj.status = 'pago';
+            numeroObj.data_confirmacao = new Date().toISOString();
+            saveNumeros(numeros);
+        }
         
         res.json({ success: true });
     } catch (error) {
@@ -376,20 +329,31 @@ app.post('/api/admin/confirmar-pagamento', checkDB, authAdmin, async (req, res) 
     }
 });
 
-app.post('/api/admin/cancelar-venda', checkDB, authAdmin, async (req, res) => {
+app.post('/api/admin/cancelar-venda', authAdmin, (req, res) => {
     try {
         const { venda_id, numero } = req.body;
         
-        await pool.execute('UPDATE vendas SET status_pagamento = "cancelado" WHERE id = ?', [venda_id]);
-        await updateNumero(numero, {
-            status: 'disponivel',
-            comprador_nome: null,
-            comprador_telefone: null,
-            comprador_email: null,
-            comprovante_codigo: null,
-            data_reserva: null,
-            data_confirmacao: null
-        });
+        // Atualizar venda
+        let vendas = loadVendas();
+        const vendaIndex = vendas.findIndex(v => v.id === venda_id);
+        if (vendaIndex !== -1) {
+            vendas[vendaIndex].status_pagamento = 'cancelado';
+            saveVendas(vendas);
+        }
+        
+        // Liberar número
+        let numeros = loadNumeros();
+        const numeroObj = numeros.find(n => n.numero === numero);
+        if (numeroObj) {
+            numeroObj.status = 'disponivel';
+            numeroObj.comprador_nome = null;
+            numeroObj.comprador_telefone = null;
+            numeroObj.comprador_email = null;
+            numeroObj.comprovante_codigo = null;
+            numeroObj.data_reserva = null;
+            numeroObj.data_confirmacao = null;
+            saveNumeros(numeros);
+        }
         
         res.json({ success: true });
     } catch (error) {
@@ -397,18 +361,18 @@ app.post('/api/admin/cancelar-venda', checkDB, authAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/admin/exportar', checkDB, authAdmin, async (req, res) => {
+app.get('/api/admin/exportar', authAdmin, (req, res) => {
     try {
-        const [rows] = await pool.execute("SELECT * FROM vendas WHERE status_pagamento = 'confirmado'");
-        res.json(rows);
+        const vendas = loadVendas();
+        res.json(vendas.filter(v => v.status_pagamento === 'confirmado'));
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.post('/api/admin/sortear', checkDB, authAdmin, async (req, res) => {
+app.post('/api/admin/sortear', authAdmin, (req, res) => {
     try {
-        const numeros = await getNumeros();
+        const numeros = loadNumeros();
         const pagos = numeros.filter(n => n.status === 'pago');
         
         if (pagos.length === 0) {
@@ -417,17 +381,22 @@ app.post('/api/admin/sortear', checkDB, authAdmin, async (req, res) => {
         
         const sorteado = pagos[Math.floor(Math.random() * pagos.length)];
         
-        await pool.execute(
-            `INSERT INTO sorteios (numero, ganhador_nome, ganhador_telefone, ganhador_email, data_sorteio)
-             VALUES (?, ?, ?, ?, ?)`,
-            [sorteado.numero, sorteado.comprador_nome, sorteado.comprador_telefone, sorteado.comprador_email, new Date()]
-        );
+        const sorteios = loadSorteios();
+        sorteios.push({
+            id: Date.now(),
+            numero: sorteado.numero,
+            ganhador_nome: sorteado.comprador_nome,
+            ganhador_telefone: sorteado.comprador_telefone,
+            ganhador_email: sorteado.comprador_email,
+            data_sorteio: new Date().toISOString()
+        });
+        saveSorteios(sorteios);
         
-        const config = await getConfig();
+        const config = loadConfig();
         config.rifa_ativa = 'false';
         config.ultimo_ganhador = sorteado.comprador_nome;
         config.ultimo_ganhador_numero = sorteado.numero;
-        await updateConfig(config);
+        saveConfig(config);
         
         res.json({
             success: true,
@@ -442,28 +411,30 @@ app.post('/api/admin/sortear', checkDB, authAdmin, async (req, res) => {
     }
 });
 
-app.get('/api/admin/historico-sorteios', checkDB, authAdmin, async (req, res) => {
+app.get('/api/admin/historico-sorteios', authAdmin, (req, res) => {
     try {
-        const [rows] = await pool.execute('SELECT * FROM sorteios ORDER BY data_sorteio DESC');
-        res.json(rows);
+        const sorteios = loadSorteios();
+        res.json(sorteios.reverse());
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.get('/api/admin/configuracoes', checkDB, authAdmin, async (req, res) => {
+app.get('/api/admin/configuracoes', authAdmin, (req, res) => {
     try {
-        const config = await getConfig();
+        const config = loadConfig();
         res.json(config);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.post('/api/admin/configuracoes', checkDB, authAdmin, async (req, res) => {
+app.post('/api/admin/configuracoes', authAdmin, (req, res) => {
     try {
         const novasConfig = req.body;
-        await updateConfig(novasConfig);
+        const config = loadConfig();
+        Object.assign(config, novasConfig);
+        saveConfig(config);
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -476,7 +447,8 @@ app.post('/api/admin/configuracoes', checkDB, authAdmin, async (req, res) => {
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'ok', 
-        db: dbConnected ? 'connected' : 'disconnected',
+        storage: 'JSON',
+        numeros: loadNumeros().length,
         timestamp: new Date().toISOString()
     });
 });
@@ -495,29 +467,14 @@ app.get('/admin', (req, res) => {
 // ============================================
 // INICIAR SERVIDOR
 // ============================================
-async function startServer() {
-    console.log('🚀 Iniciando servidor...');
-    
-    // Tenta conectar ao banco
-    const connected = await initDatabase();
-    
-    if (!connected) {
-        console.log('⚠️ Banco não conectado. Tentando novamente em 5 segundos...');
-        setTimeout(async () => {
-            await initDatabase();
-        }, 5000);
-    }
-    
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log('='.repeat(50));
-        console.log('🚀 SISTEMA DE RIFA COM MYSQL');
-        console.log('='.repeat(50));
-        console.log(`📱 Site: http://localhost:${PORT}`);
-        console.log(`👨‍💼 Admin: http://localhost:${PORT}/admin`);
-        console.log(`🔐 Senha Admin: ${ADMIN_PASSWORD}`);
-        console.log(`💾 Banco: ${dbConnected ? 'Conectado ✅' : 'Desconectado ❌'}`);
-        console.log('='.repeat(50));
-    });
-}
-
-startServer();
+app.listen(PORT, '0.0.0.0', () => {
+    console.log('='.repeat(50));
+    console.log('🚀 SISTEMA DE RIFA (JSON Storage)');
+    console.log('='.repeat(50));
+    console.log(`📱 Site: http://localhost:${PORT}`);
+    console.log(`👨‍💼 Admin: http://localhost:${PORT}/admin`);
+    console.log(`🔐 Senha Admin: ${ADMIN_PASSWORD}`);
+    console.log(`💾 Armazenamento: Arquivos JSON`);
+    console.log(`📊 Números: ${loadNumeros().length}`);
+    console.log('='.repeat(50));
+});
