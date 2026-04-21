@@ -223,30 +223,77 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio
 // ============================================
 // FUNÇÃO PARA GERAR QR CODE DO PIX
 // ============================================
-async function gerarQRCodePix(chavePix, nomeRecebedor, cidade, valor) {
-    // Formato BR Code para PIX estático
-    const valorFormatado = valor ? valor.toFixed(2).replace('.', '') : '';
-    const pixPayload = `00020101021126330014BR.GOV.BCB.PIX0111${chavePix}5204000053039865404${valorFormatado}5802BR5915${nomeRecebedor}6008${cidade}62070503***6304`;
-    // Calcular CRC16
-    const crc16 = (str) => {
-        let crc = 0xFFFF;
-        for (let i = 0; i < str.length; i++) {
-            crc ^= str.charCodeAt(i) << 8;
-            for (let j = 0; j < 8; j++) {
-                crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
-            }
+async function gerarQRCodePix(chavePix, nomeRecebedor, cidade, valor, descricao = 'Pagamento Rifa') {
+    try {
+        // Limpar chave PIX (remover espaços, traços, etc)
+        const chaveLimpa = chavePix.replace(/\s+/g, '').replace(/[-\.]/g, '');
+        
+        // Formatar valor para o padrão do PIX (sem ponto, 2 casas decimais)
+        const valorFormatado = valor.toFixed(2).replace('.', '');
+        
+        // Identificar tipo da chave PIX
+        let chaveTipo = '';
+        let chaveValor = chaveLimpa;
+        
+        if (chaveLimpa.match(/^\d{11}$/)) {
+            chaveTipo = 'CPF';
+        } else if (chaveLimpa.match(/^\d{14}$/)) {
+            chaveTipo = 'CNPJ';
+        } else if (chaveLimpa.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
+            chaveTipo = 'EMAIL';
+        } else if (chaveLimpa.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i)) {
+            chaveTipo = 'UUID';
+        } else if (chaveLimpa.match(/^\d{10,11}$/)) {
+            chaveTipo = 'TELEFONE';
+        } else {
+            chaveTipo = 'CHAVE';
         }
-        return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
-    };
-    const crc = crc16(pixPayload + '6304');
-    const payloadCompleto = pixPayload + crc;
-    
-    return await QRCode.toDataURL(payloadCompleto, {
-        errorCorrectionLevel: 'M',
-        margin: 2,
-        width: 250,
-        color: { dark: '#000000', light: '#ffffff' }
-    });
+        
+        // Montar payload PIX conforme padrão BR Code
+        let payload = '000201'; // Payload Format Indicator
+        payload += '010211'; // Merchant Account Information - GUI
+        payload += '2633'; // Merchant Account Information - Length
+        payload += '0014BR.GOV.BCB.PIX'; // DOM
+        payload += `01${String(chaveLimpa.length).padStart(2, '0')}${chaveLimpa}`; // Chave PIX
+        payload += '52040000'; // Merchant Category Code
+        payload += '5303986'; // Transaction Currency - BRL
+        payload += `54${String(valorFormatado.length).padStart(2, '0')}${valorFormatado}`; // Transaction Amount
+        payload += '5802BR'; // Country Code
+        payload += `59${String(nomeRecebedor.length).padStart(2, '0')}${nomeRecebedor}`; // Merchant Name
+        payload += `60${String(cidade.length).padStart(2, '0')}${cidade}`; // Merchant City
+        payload += `62${String(descricao.length + 4).padStart(2, '0')}05${String(descricao.length).padStart(2, '0')}${descricao}`; // Additional Data Field
+        
+        // Calcular CRC16
+        const crc16 = (str) => {
+            let crc = 0xFFFF;
+            for (let i = 0; i < str.length; i++) {
+                crc ^= str.charCodeAt(i) << 8;
+                for (let j = 0; j < 8; j++) {
+                    crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
+                }
+            }
+            return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+        };
+        
+        const crc = crc16(payload + '6304');
+        const payloadCompleto = payload + '6304' + crc;
+        
+        // Gerar QR Code
+        return await QRCode.toDataURL(payloadCompleto, {
+            errorCorrectionLevel: 'M',
+            margin: 2,
+            width: 250,
+            color: { dark: '#000000', light: '#ffffff' }
+        });
+    } catch (error) {
+        console.error('Erro ao gerar QR Code PIX:', error);
+        // Retornar QR Code com texto simples como fallback
+        return await QRCode.toDataURL(`Chave PIX: ${chavePix}\nValor: R$ ${valor.toFixed(2)}`, {
+            errorCorrectionLevel: 'M',
+            margin: 2,
+            width: 250
+        });
+    }
 }
 
 // ============================================
@@ -416,16 +463,30 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
         
         salvarRifa(req.params.usuarioId, rifa.id, rifa);
         
-        // Gerar QR Code do PIX se houver chave PIX configurada
-        let pixQRCode = '';
-        const chavePix = rifa.config?.chave_pix || '';
-        if (chavePix && chavePix !== '') {
-            try {
-                pixQRCode = await gerarQRCodePix(chavePix, nome, 'Cidade', valorTotal);
-            } catch(err) {
-                console.error('Erro ao gerar QR Code PIX:', err);
-            }
-        }
+       // Gerar QR Code do PIX se houver chave PIX configurada
+let pixQRCode = '';
+const chavePix = rifa.config?.chave_pix || '';
+if (chavePix && chavePix !== '') {
+    try {
+        // Usar o nome do organizador, não do comprador
+        const nomeOrganizador = req.usuario?.nome || rifa.config?.nome_organizador || 'Organizador';
+        const cidade = rifa.config?.cidade || 'Cidade';
+        const descricao = `Rifa ${rifa.config?.nome_rifa || rifa.nome}`;
+        
+        pixQRCode = await gerarQRCodePix(
+            chavePix, 
+            nomeOrganizador, 
+            cidade, 
+            valorTotal,
+            descricao
+        );
+        console.log('QR Code PIX gerado com sucesso');
+    } catch(err) {
+        console.error('Erro ao gerar QR Code PIX:', err);
+        // QR Code com texto alternativo
+        pixQRCode = await QRCode.toDataURL(`Chave PIX: ${chavePix}\nValor: R$ ${valorTotal.toFixed(2)}`);
+    }
+}
         
         res.json({
             success: true,
