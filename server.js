@@ -716,6 +716,10 @@ app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
+app.get('/cadastro', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'login.html')); // Mesma página
+});
+
 app.get('/dashboard', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
