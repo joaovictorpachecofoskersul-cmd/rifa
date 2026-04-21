@@ -1,1 +1,708 @@
 
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>Mega Rifa - Escolha seu Número</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .btn-organizador {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-decoration: none;
+            z-index: 10;
+        }
+
+        .btn-organizador:hover {
+            background: #764ba2;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.4em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .ganhador-banner {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .rifa-bloqueada {
+            background: #f44336;
+            color: white;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .imagem-rifa {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .imagem-rifa img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 10px;
+        }
+
+        .info-bar {
+            background: #667eea;
+            color: white;
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .numeros-selecionados {
+            font-size: 0.85em;
+            flex: 1;
+        }
+
+        .total-valor {
+            font-size: 1.1em;
+            font-weight: bold;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 8px;
+        }
+
+        .btn-limpar {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .legenda {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            flex-wrap: wrap;
+        }
+
+        .legenda-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75em;
+        }
+
+        .cor {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .cor.disponivel { background: #4caf50; }
+        .cor.reservado { background: #ff9800; }
+        .cor.pago { background: #f44336; }
+        .cor.selected { background: #2196F3; }
+
+        .grid-numeros {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            padding: 10px;
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .numero-item {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1em;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        @media (min-width: 768px) {
+            body { padding: 20px; }
+            .container { padding: 30px; }
+            h1 { font-size: 1.8em; }
+            .grid-numeros {
+                grid-template-columns: repeat(10, 1fr);
+                gap: 10px;
+                padding: 20px;
+            }
+            .numero-item { font-size: 1.2em; }
+        }
+
+        @media (max-width: 480px) {
+            .grid-numeros { gap: 6px; padding: 8px; }
+            .numero-item { font-size: 0.85em; }
+            .info-bar { flex-direction: column; text-align: center; }
+            h1 { padding-right: 0; margin-top: 35px; }
+            .btn-organizador { top: 10px; right: 10px; font-size: 0.7em; padding: 5px 10px; }
+        }
+
+        .numero-item.disponivel {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+            color: white;
+        }
+
+        .numero-item.reservado {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.8;
+        }
+
+        .numero-item.pago {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+            color: white;
+            cursor: not-allowed;
+            text-decoration: line-through;
+        }
+
+        .numero-item.selected {
+            background: #2196F3 !important;
+            box-shadow: 0 0 0 2px #ff9800;
+            transform: scale(1.02);
+        }
+
+        .form-area {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+
+        .form-area h3 {
+            font-size: 1.1em;
+            margin-bottom: 15px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+            font-size: 0.85em;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
+        .info-pagamento {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 10px;
+            margin: 15px 0;
+            text-align: left;
+            font-size: 0.85em;
+        }
+
+        .btn-whatsapp {
+            background: #25D366;
+            margin-top: 10px;
+        }
+
+        .btn-whatsapp:hover {
+            background: #128C7E;
+        }
+
+        .btn-fechar {
+            background: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/login.html" class="btn-organizador">👤 Área do Organizador</a>
+
+        <h1 id="nomeRifa">🎫 Carregando...</h1>
+        <div class="subtitle" id="descricaoRifa"></div>
+
+        <div id="ganhadorBanner"></div>
+        <div id="imagemRifa" class="imagem-rifa"></div>
+        <div id="avisoBloqueio"></div>
+
+        <div class="info-bar">
+            <div class="numeros-selecionados">
+                📌 <strong id="qtdSelecionados">0</strong> número(s): 
+                <span id="listaNumerosSelecionados">nenhum</span>
+            </div>
+            <div class="total-valor">
+                💰 R$ <span id="totalValor">0,00</span>
+            </div>
+            <button class="btn-limpar" onclick="limparTudo()">🗑️ Limpar</button>
+        </div>
+
+        <div class="legenda">
+            <div class="legenda-item"><div class="cor disponivel"></div><span>Disponível</span></div>
+            <div class="legenda-item"><div class="cor reservado"></div><span>Reservado</span></div>
+            <div class="legenda-item"><div class="cor pago"></div><span>Pago</span></div>
+            <div class="legenda-item"><div class="cor selected"></div><span>Selecionado</span></div>
+        </div>
+
+        <div class="grid-numeros" id="gridNumeros"></div>
+
+        <div class="form-area">
+            <h3>📝 Finalizar Compra</h3>
+            <div class="form-group">
+                <label>Nome completo</label>
+                <input type="text" id="nome" placeholder="Digite seu nome completo">
+            </div>
+            <div class="form-group">
+                <label>WhatsApp (com DDD)</label>
+                <input type="tel" id="telefone" placeholder="(11) 99999-9999">
+            </div>
+            <div class="form-group">
+                <label>E-mail</label>
+                <input type="email" id="email" placeholder="seu@email.com">
+            </div>
+            <button id="btnReservar" disabled>🔒 Reservar Número(s)</button>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2>✅ Reserva Realizada!</h2>
+            <div class="info-pagamento">
+                <p><strong>🎫 Rifa:</strong> <span id="modalNomeRifa"></span></p>
+                <p><strong>🔢 Quantidade:</strong> <span id="modalQuantidade"></span> números</p>
+                <p><strong>📌 Números:</strong> <span id="modalNumeros"></span></p>
+                <p><strong>💰 Valor Total:</strong> R$ <span id="modalValorTotal"></span></p>
+                <p><strong>📋 Código:</strong> <span id="modalCodigoUnico"></span></p>
+                <div id="modalQR" style="margin: 15px 0; text-align: center;"></div>
+                <p><strong>📱 Chave PIX:</strong> <span id="modalPix"></span></p>
+                <hr>
+                <div id="mensagensComprovante"></div>
+            </div>
+            <p style="color: #f44336; font-weight: bold; font-size: 0.8em;">
+                ⚠️ APÓS O PAGAMENTO, ENVIE O COMPROVANTE!
+            </p>
+            <button id="btnWhatsApp" class="btn-whatsapp">📱 Enviar via WhatsApp</button>
+            <button onclick="fecharModal()" class="btn-fechar">Fechar</button>
+        </div>
+    </div>
+
+    <script>
+        // PEGAR IDs DA URL
+        const pathParts = window.location.pathname.split('/');
+        const usuarioIdUrl = pathParts[2];
+        const rifaIdUrl = pathParts[3];
+
+        let numeros = [];
+        let numerosSelecionados = [];
+        let configRifa = {};
+        let rifaAtiva = true;
+
+        console.log('IDs da URL:', { usuarioIdUrl, rifaIdUrl });
+
+       async function carregarConfiguracoes() {
+    try {
+        const response = await fetch(`/api/public/rifa/${usuarioIdUrl}/${rifaIdUrl}`);
+        const config = await response.json();
+        console.log('Configurações carregadas:', config);
+        
+        configRifa = config;
+        document.getElementById('nomeRifa').textContent = `🎫 ${config.nome_rifa || config.nome || 'MEGA RIFA PREMIUM'}`;
+        document.getElementById('descricaoRifa').textContent = config.descricao_rifa || config.descricao || '🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆';
+        
+        // ========== ALTERAÇÃO AQUI - MOSTRA O VENCEDOR QUANDO RIFA ENCERRADA ==========
+        if (config.status === 'finalizada' || config.rifa_ativa === 'false') {
+            rifaAtiva = false;
+            document.getElementById('btnReservar').disabled = true;
+            
+            // MOSTRA O VENCEDOR DE FORMA DESTACADA
+            document.getElementById('avisoBloqueio').innerHTML = `
+                <div class="rifa-bloqueada" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    🔒 RIFA ENCERRADA! 🔒<br><br>
+                    🏆 <strong style="font-size: 1.3em;">NÚMERO GANHADOR: ${config.ultimo_ganhador_numero || '?'}</strong> 🏆<br><br>
+                    👑 <strong>Ganhador(a): ${config.ultimo_ganhador || 'Aguardando sorteio'}</strong><br>
+                    📅 Sorteio realizado em: ${new Date(config.data_sorteio || Date.now()).toLocaleDateString('pt-BR')}
+                </div>
+            `;
+            
+            // ESCONDE O BANNER DE ÚLTIMO GANHADOR (já que já mostramos acima)
+            document.getElementById('ganhadorBanner').innerHTML = '';
+            
+        } else {
+            // RIFA AINDA ATIVA - MOSTRA ÚLTIMO GANHADOR SE EXISTIR
+            if (config.ultimo_ganhador && config.ultimo_ganhador !== '') {
+                document.getElementById('ganhadorBanner').innerHTML = `
+                    <div class="ganhador-banner">
+                        🎉 ÚLTIMO GANHADOR! 🎉<br>
+                        <strong>Número ${config.ultimo_ganhador_numero}</strong> - ${config.ultimo_ganhador}
+                    </div>
+                `;
+            } else {
+                document.getElementById('ganhadorBanner').innerHTML = '';
+            }
+        }
+        // ========== FIM DA ALTERAÇÃO ==========
+        
+        if (config.imagem_rifa && config.imagem_rifa !== '') {
+            document.getElementById('imagemRifa').innerHTML = `<img src="${config.imagem_rifa}" alt="Imagem da Rifa">`;
+        }
+        
+        if (config.cor_principal) {
+            const style = document.createElement('style');
+            style.textContent = `
+                .numero-item.disponivel { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
+                .info-bar { background: ${config.cor_principal}; }
+                button:not(.btn-whatsapp):not(.btn-fechar) { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        numeros = config.numeros || [];
+        atualizarGrid();
+    } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+    }
+}
+
+        function atualizarGrid() {
+            const grid = document.getElementById('gridNumeros');
+            grid.innerHTML = '';
+            
+            if (!numeros || numeros.length === 0) {
+                grid.innerHTML = '<div style="text-align:center; padding:20px;">Carregando números...</div>';
+                return;
+            }
+            
+            numeros.forEach(num => {
+                const div = document.createElement('div');
+                div.className = `numero-item ${num.status}`;
+                div.textContent = num.numero;
+                
+                if (num.status === 'disponivel' && rifaAtiva && configRifa.status === 'ativa') {
+                    div.onclick = () => toggleSelecionarNumero(num.numero);
+                }
+                
+                if (numerosSelecionados.includes(num.numero)) {
+                    div.classList.add('selected');
+                }
+                
+                grid.appendChild(div);
+            });
+        }
+
+        function toggleSelecionarNumero(numero) {
+            if (!rifaAtiva) {
+                alert('⚠️ Esta rifa já foi finalizada!');
+                return;
+            }
+            
+            const index = numerosSelecionados.indexOf(numero);
+            if (index === -1) {
+                numerosSelecionados.push(numero);
+            } else {
+                numerosSelecionados.splice(index, 1);
+            }
+            atualizarInterface();
+        }
+
+        function limparTudo() {
+            numerosSelecionados = [];
+            atualizarInterface();
+        }
+
+        function atualizarInterface() {
+            document.querySelectorAll('.numero-item').forEach(el => {
+                const num = parseInt(el.textContent);
+                if (numerosSelecionados.includes(num)) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+            
+            const qtd = numerosSelecionados.length;
+            const valorUnitario = parseFloat(configRifa.valor_rifa || configRifa.valor || 10);
+            const total = qtd * valorUnitario;
+            
+            document.getElementById('qtdSelecionados').textContent = qtd;
+            
+            if (qtd === 0) {
+                document.getElementById('listaNumerosSelecionados').textContent = 'nenhum';
+                document.getElementById('totalValor').textContent = '0,00';
+                document.getElementById('btnReservar').disabled = true;
+            } else {
+                const numerosOrdenados = [...numerosSelecionados].sort((a,b) => a-b);
+                document.getElementById('listaNumerosSelecionados').textContent = numerosOrdenados.join(', ');
+                document.getElementById('totalValor').textContent = total.toFixed(2).replace('.', ',');
+                document.getElementById('btnReservar').disabled = false;
+            }
+        }
+
+        document.getElementById('btnReservar').onclick = async () => {
+            if (!rifaAtiva) {
+                alert('⚠️ Esta rifa já foi finalizada!');
+                return;
+            }
+            
+            const nome = document.getElementById('nome').value;
+            const telefone = document.getElementById('telefone').value;
+            const email = document.getElementById('email').value;
+            
+            if (!nome || !telefone || !email) {
+                alert('⚠️ Preencha todos os campos!');
+                return;
+            }
+            
+            if (numerosSelecionados.length === 0) {
+                alert('⚠️ Selecione pelo menos um número!');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/public/rifa/${usuarioIdUrl}/${rifaIdUrl}/reservar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        numeros: numerosSelecionados,
+                        nome: nome,
+                        telefone: telefone,
+                        email: email
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Resposta reserva:', data);
+                
+                if (data.success) {
+                    // Preencher modal
+                    document.getElementById('modalNomeRifa').textContent = data.nome_rifa || configRifa.nome_rifa;
+document.getElementById('modalQuantidade').textContent = data.total_numeros;
+document.getElementById('modalNumeros').textContent = data.numeros.map(n => n.numero).sort((a,b) => a-b).join(', ');
+document.getElementById('modalValorTotal').textContent = data.valor_total.toFixed(2).replace('.', ',');
+
+// ========== CÓDIGO NOVO DO QR CODE PIX ==========
+const modalQR = document.getElementById('modalQR');
+if (data.pix_qr_code && data.pix_qr_code !== '') {
+    // Mostrar QR Code do PIX
+    modalQR.innerHTML = `
+        <div style="background: white; padding: 15px; border-radius: 10px;">
+            <h4 style="color: #333; margin-bottom: 10px;">📱 QR Code PIX para pagamento</h4>
+            <img src="${data.pix_qr_code}" style="width: 200px; max-width: 100%; margin: 10px auto; display: block; border: 1px solid #ddd; border-radius: 10px;">
+            <p style="font-size: 0.8em; color: #666;">Escaneie o QR Code no seu banco para pagar</p>
+            <hr style="margin: 10px 0;">
+            <p style="font-size: 0.75em; color: #999;">ou copie a chave:</p>
+            <code style="background: #f0f0f0; padding: 8px; display: block; border-radius: 5px; word-break: break-all; font-size: 0.7em;">
+                ${data.chave_pix}
+            </code>
+            <button onclick="copiarChavePix()" style="background: #e0e0e0; color: #333; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7em; margin-top: 5px; width: auto;">
+                📋 Copiar chave
+            </button>
+        </div>
+    `;
+} else {
+    // Fallback: mostrar apenas a chave PIX em texto
+    modalQR.innerHTML = `
+        <div style="background: #fff3cd; padding: 10px; border-radius: 5px;">
+            <p style="margin: 0 0 5px 0;">💡 <strong>Chave PIX para pagamento:</strong></p>
+            <code style="background: white; padding: 8px; display: block; border-radius: 5px; word-break: break-all;">
+                ${data.chave_pix || 'Chave não configurada'}
+            </code>
+            <p style="font-size: 0.7em; margin-top: 8px; color: #856404;">
+                Faça o PIX e envie o comprovante no WhatsApp
+            </p>
+        </div>
+    `;
+}
+// ========== FIM DO CÓDIGO NOVO ==========
+
+const codigoUnico = `RIFA-MULTI-${data.numeros[0].comprovante.split('-')[2]}`;
+document.getElementById('modalCodigoUnico').textContent = codigoUnico;
+document.getElementById('modalPix').textContent = data.chave_pix || configRifa.chave_pix || 'Chave PIX do organizador';
+                    
+                    
+                    // Mensagens personalizadas do comprovante
+                    let mensagensHtml = '';
+                    if (data.mensagem_boas_vindas) mensagensHtml += `<p>📢 ${data.mensagem_boas_vindas}</p>`;
+                    if (data.instrucoes_pagamento) mensagensHtml += `<p>📝 ${data.instrucoes_pagamento.replace(/\n/g, '<br>')}</p>`;
+                    if (data.rodape_comprovante) mensagensHtml += `<p>✨ ${data.rodape_comprovante.replace(/\n/g, '<br>')}</p>`;
+                    document.getElementById('mensagensComprovante').innerHTML = mensagensHtml;
+                    
+                    // Botão WhatsApp
+                    const btnWhatsApp = document.getElementById('btnWhatsApp');
+                    const adminWhatsApp = configRifa.admin_whatsapp || '55999999999';
+                    
+                    const mensagemAdmin = `*NOVA RESERVA DE RIFA* 🎫%0A%0A` +
+                        `*Cliente:* ${nome}%0A` +
+                        `*Telefone:* ${telefone}%0A` +
+                        `*Email:* ${email}%0A` +
+                        `*Números:* ${data.numeros.map(n => n.numero).sort((a,b) => a-b).join(', ')}%0A` +
+                        `*Quantidade:* ${data.total_numeros} números%0A` +
+                        `*Valor Total:* R$ ${data.valor_total.toFixed(2)}%0A%0A` +
+                        `✅ Código: ${codigoUnico}%0A%0A` +
+                        `✅ Aguardando confirmação de pagamento!`;
+                    
+                    btnWhatsApp.onclick = () => {
+                        window.open(`https://wa.me/55${adminWhatsApp}?text=${mensagemAdmin}`, '_blank');
+                    };
+                    
+                    document.getElementById('modal').style.display = 'flex';
+                    
+                    // Limpar formulário
+                    document.getElementById('nome').value = '';
+                    document.getElementById('telefone').value = '';
+                    document.getElementById('email').value = '';
+                    limparTudo();
+                    
+                    // Recarregar números
+                    carregarConfiguracoes();
+                } else {
+                    alert('❌ ' + data.error);
+                    if (data.numero_indisponivel) {
+                        carregarConfiguracoes();
+                        limparTudo();
+                    }
+                }
+            } catch (error) {
+                console.error('Erro na reserva:', error);
+                alert('Erro ao fazer reserva. Tente novamente.');
+            }
+        };
+
+        function fecharModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        function copiarChavePix() {
+    const chavePix = document.getElementById('modalPix').textContent;
+    if (chavePix && chavePix !== 'Chave PIX do organizador') {
+        navigator.clipboard.writeText(chavePix).then(() => {
+            alert('✅ Chave PIX copiada com sucesso!');
+        }).catch(() => {
+            alert('❌ Não foi possível copiar. Copie manualmente: ' + chavePix);
+        });
+    } else {
+        alert('⚠️ Nenhuma chave PIX configurada!');
+    }
+}
+
+        // Inicializar
+        if (usuarioIdUrl && rifaIdUrl) {
+            carregarConfiguracoes();
+            setInterval(carregarConfiguracoes, 10000);
+        } else {
+            document.getElementById('gridNumeros').innerHTML = '<div style="text-align:center; padding:20px;">Link inválido. Verifique o endereço.</div>';
+        }
+    </script>
+</body>
+</html>
