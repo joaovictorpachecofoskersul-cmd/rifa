@@ -500,23 +500,16 @@ let pixQRCode = '';
 const chavePix = rifa.config?.chave_pix || '';
 if (chavePix && chavePix !== '') {
     try {
-        // Usar o nome do organizador, não do comprador
         const nomeOrganizador = req.usuario?.nome || rifa.config?.nome_organizador || 'Organizador';
         const cidade = rifa.config?.cidade || 'Cidade';
-        const descricao = `Rifa ${rifa.config?.nome_rifa || rifa.nome}`;
         
-        pixQRCode = await gerarQRCodePix(
-            chavePix, 
-            nomeOrganizador, 
-            cidade, 
-            valorTotal,
-            descricao
-        );
-        console.log('QR Code PIX gerado com sucesso');
+        // GERAR QR CODE SEM VALOR
+        pixQRCode = await gerarQRCodePix(chavePix, nomeOrganizador, cidade);
+        
+        console.log('QR Code PIX gerado com sucesso (sem valor fixo)');
     } catch(err) {
         console.error('Erro ao gerar QR Code PIX:', err);
-        // QR Code com texto alternativo
-        pixQRCode = await QRCode.toDataURL(`Chave PIX: ${chavePix}\nValor: R$ ${valorTotal.toFixed(2)}`);
+        pixQRCode = '';
     }
 }
         
