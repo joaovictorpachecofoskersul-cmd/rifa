@@ -6,6 +6,7 @@ const QRCode = require('qrcode');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
+const mysql = require('mysql2/promise');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,128 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'views')));
+
+// ============================================
+// CONEXÃO COM MySQL (NÃO MUDE NADA AQUI)
+// ============================================
+// COLOQUE SUAS CREDENCIAIS AQUI (as mesmas da Hostinger)
+const dbConfig = {
+    host: 'localhost',        // ou o host do seu MySQL
+    user: 'seu_usuario',      // COLOQUE SEU USUÁRIO
+    password: 'sua_senha',    // COLOQUE SUA SENHA
+    database: 'seu_banco',    // COLOQUE O NOME DO BANCO
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+};
+
+let pool;
+
+async function initMySQL() {
+    try {
+        pool = await mysql.createPool(dbConfig);
+        console.log('✅ MySQL conectado com sucesso!');
+        
+        // Criar tabelas se não existirem
+        await criarTabelas();
+    } catch (error) {
+        console.error('❌ Erro ao conectar MySQL:', error.message);
+        console.log('⚠️ Sistema continuará usando apenas JSON');
+    }
+}
+
+async function criarTabelas() {
+    try {
+        // Tabela de usuários
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id VARCHAR(36) PRIMARY KEY,
+                nome VARCHAR(100) NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                senha VARCHAR(255) NOT NULL,
+                empresa VARCHAR(100),
+                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        console.log('✅ Tabela usuarios OK');
+        
+        // Tabela de rifas
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS rifas (
+                id VARCHAR(36) PRIMARY KEY,
+                usuario_id VARCHAR(36) NOT NULL,
+                nome VARCHAR(100) NOT NULL,
+                descricao TEXT,
+                valor DECIMAL(10,2) NOT NULL,
+                total_numeros INT DEFAULT 100,
+                premio TEXT,
+                status VARCHAR(20) DEFAULT 'ativa',
+                data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
+                ultimo_ganhador VARCHAR(100),
+                ultimo_ganhador_numero INT,
+                config TEXT,
+                FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+            )
+        `);
+        console.log('✅ Tabela rifas OK');
+        
+        // Tabela de números
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS numeros (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                rifa_id VARCHAR(36) NOT NULL,
+                numero INT NOT NULL,
+                status VARCHAR(20) DEFAULT 'disponivel',
+                comprador_nome VARCHAR(100),
+                comprador_telefone VARCHAR(20),
+                comprador_email VARCHAR(100),
+                comprovante_codigo VARCHAR(50),
+                data_reserva DATETIME,
+                data_confirmacao DATETIME,
+                FOREIGN KEY (rifa_id) REFERENCES rifas(id)
+            )
+        `);
+        console.log('✅ Tabela numeros OK');
+        
+        // Tabela de vendas
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS vendas (
+                id VARCHAR(36) PRIMARY KEY,
+                rifa_id VARCHAR(36) NOT NULL,
+                numero INT NOT NULL,
+                nome VARCHAR(100),
+                telefone VARCHAR(20),
+                email VARCHAR(100),
+                comprovante_codigo VARCHAR(50),
+                qr_code TEXT,
+                status_pagamento VARCHAR(20) DEFAULT 'pendente',
+                valor_pago DECIMAL(10,2),
+                data_pedido DATETIME DEFAULT CURRENT_TIMESTAMP,
+                data_pagamento DATETIME,
+                FOREIGN KEY (rifa_id) REFERENCES rifas(id)
+            )
+        `);
+        console.log('✅ Tabela vendas OK');
+        
+        // Tabela de sorteios
+        await pool.execute(`
+            CREATE TABLE IF NOT EXISTS sorteios (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                rifa_id VARCHAR(36) NOT NULL,
+                numero INT NOT NULL,
+                ganhador_nome VARCHAR(100),
+                ganhador_telefone VARCHAR(20),
+                ganhador_email VARCHAR(100),
+                data_sorteio DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (rifa_id) REFERENCES rifas(id)
+            )
+        `);
+        console.log('✅ Tabela sorteios OK');
+        
+    } catch (error) {
+        console.error('Erro ao criar tabelas:', error);
+    }
+}
 
 // ============================================
 // CONFIGURAÇÕES
@@ -29,7 +152,7 @@ if (!fs.existsSync(USUARIOS_DIR)) fs.mkdirSync(USUARIOS_DIR);
 if (!fs.existsSync(RIFAS_DIR)) fs.mkdirSync(RIFAS_DIR);
 
 // ============================================
-// FUNÇÕES DE USUÁRIOS
+// FUNÇÕES DE USUÁRIOS (com MySQL + JSON)
 // ============================================
 
 function carregarUsuarios() {
@@ -45,6 +168,19 @@ function carregarUsuarios() {
 function salvarUsuarios(usuarios) {
     const usuariosFile = path.join(USUARIOS_DIR, 'lista.json');
     fs.writeFileSync(usuariosFile, JSON.stringify(usuarios, null, 2));
+}
+
+async function salvarUsuarioMySQL(usuario) {
+    if (!pool) return;
+    try {
+        await pool.execute(
+            'INSERT INTO usuarios (id, nome, email, senha, empresa, data_criacao) VALUES (?, ?, ?, ?, ?, ?)',
+            [usuario.id, usuario.nome, usuario.email, usuario.senha, usuario.empresa, usuario.data_criacao]
+        );
+        console.log('✅ Usuario salvo no MySQL:', usuario.email);
+    } catch (error) {
+        console.error('Erro ao salvar usuario no MySQL:', error);
+    }
 }
 
 function criarUsuario(nome, email, senha, empresa) {
@@ -89,6 +225,9 @@ function criarUsuario(nome, email, senha, empresa) {
     
     usuarios.push(novoUsuario);
     salvarUsuarios(usuarios);
+    
+    // Salvar também no MySQL
+    salvarUsuarioMySQL(novoUsuario);
     
     const userDir = path.join(RIFAS_DIR, usuarioId);
     if (!fs.existsSync(userDir)) fs.mkdirSync(userDir);
@@ -221,52 +360,29 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio
 }
 
 // ============================================
-// FUNÇÃO PARA GERAR QR CODE DO PIX (CORRIGIDA - SEM DUPLICAÇÃO)
+// FUNÇÃO PARA GERAR QR CODE DO PIX
 // ============================================
 async function gerarQRCodePix(chavePix, nomeRecebedor, cidade) {
     try {
-        // Limpar chave PIX
         const chaveLimpa = chavePix.replace(/\s+/g, '').replace(/[-\.]/g, '');
-        
-        // Limitar tamanho dos campos
         const nomeLimpo = nomeRecebedor.substring(0, 25).toUpperCase();
         const cidadeLimpa = cidade.substring(0, 15).toUpperCase();
         
-        // Payload PIX sem valor (o comprador define o valor)
         let payload = '';
-        
-        // 1. Payload Format Indicator
         payload += '000201';
-        
-        // 2. Merchant Account Information
         let gui = '0014BR.GOV.BCB.PIX';
         let chavePayload = `01${String(chaveLimpa.length).padStart(2, '0')}${chaveLimpa}`;
         let mpi = gui + chavePayload;
         payload += `26${String(mpi.length).padStart(2, '0')}${mpi}`;
-        
-        // 3. Merchant Category Code
         payload += '52040000';
-        
-        // 4. Transaction Currency
         payload += '5303986';
-        
-        // 5. SEM VALOR (omitir o campo 54)
-        
-        // 6. Country Code
         payload += '5802BR';
-        
-        // 7. Merchant Name
         payload += `59${String(nomeLimpo.length).padStart(2, '0')}${nomeLimpo}`;
-        
-        // 8. Merchant City
         payload += `60${String(cidadeLimpa.length).padStart(2, '0')}${cidadeLimpa}`;
-        
-        // 9. Additional Data Field
         let txid = `RIFA${Date.now()}`.substring(0, 25);
         let additionalData = `05${String(txid.length).padStart(2, '0')}${txid}`;
         payload += `62${String(additionalData.length).padStart(2, '0')}${additionalData}`;
         
-        // 10. CRC16
         const crc16 = (str) => {
             let crc = 0xFFFF;
             for (let i = 0; i < str.length; i++) {
@@ -280,8 +396,6 @@ async function gerarQRCodePix(chavePix, nomeRecebedor, cidade) {
         
         const crc = crc16(payload + '6304');
         const payloadCompleto = payload + '6304' + crc;
-        
-        console.log('QR Code PIX gerado SEM valor fixo');
         
         return await QRCode.toDataURL(payloadCompleto, {
             errorCorrectionLevel: 'H',
@@ -355,7 +469,7 @@ app.post('/api/login', (req, res) => {
 });
 
 // ============================================
-// ROTAS PÚBLICAS PARA COMPRADORES (INDEX.HTML)
+// ROTAS PÚBLICAS PARA COMPRADORES
 // ============================================
 
 app.get('/api/public/rifa/:usuarioId/:rifaId', (req, res) => {
@@ -461,17 +575,14 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
         
         salvarRifa(req.params.usuarioId, rifa.id, rifa);
         
-        // Gerar QR Code do PIX se houver chave PIX configurada
         let pixQRCode = '';
         const chavePix = rifa.config?.chave_pix || '';
         if (chavePix && chavePix !== '') {
             try {
                 const nomeOrganizador = req.usuario?.nome || rifa.config?.nome_organizador || 'Organizador';
                 const cidade = rifa.config?.cidade || 'Cidade';
-                
                 pixQRCode = await gerarQRCodePix(chavePix, nomeOrganizador, cidade);
-                
-                console.log('QR Code PIX gerado com sucesso (sem valor fixo)');
+                console.log('QR Code PIX gerado com sucesso');
             } catch(err) {
                 console.error('Erro ao gerar QR Code PIX:', err);
                 pixQRCode = '';
@@ -500,7 +611,7 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
 });
 
 // ============================================
-// ROTAS DO USUÁRIO (DASHBOARD)
+// ROTAS DO USUÁRIO (DASHBOARD) - tudo igual
 // ============================================
 
 app.get('/api/user/rifas', authUsuario, (req, res) => {
@@ -517,10 +628,6 @@ app.post('/api/user/rifas/nova', authUsuario, (req, res) => {
     const novaRifa = criarNovaRifa(req.usuario.id, nome, descricao, valor, quantidade, premio || '');
     res.json({ success: true, rifa: novaRifa });
 });
-
-// ============================================
-// ROTAS ADMIN DO USUÁRIO (Painel do Usuário)
-// ============================================
 
 app.get('/api/user/dashboard/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
@@ -709,7 +816,7 @@ app.get('/api/master/usuario/:usuarioId/rifas', authAdmin, (req, res) => {
 // ============================================
 
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'index.html')); // NOVA PÁGINA INICIAL
+    res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
 
 app.get('/login', (req, res) => {
@@ -717,7 +824,7 @@ app.get('/login', (req, res) => {
 });
 
 app.get('/cadastro', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'login.html')); // Mesma página
+    res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
 app.get('/dashboard', (req, res) => {
@@ -729,19 +836,21 @@ app.get('/admin', (req, res) => {
 });
 
 app.get('/rifa/:usuarioId/:rifaId', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'rifa.html')); // SEU INDEX ANTIGO RENOMEADO
+    res.sendFile(path.join(__dirname, 'views', 'rifa.html'));
 });
 
 // ============================================
 // INICIAR SERVIDOR
 // ============================================
-app.listen(PORT, '0.0.0.0', () => {
-    console.log('='.repeat(50));
-    console.log('🚀 SISTEMA DE RIFA MULTI-USUÁRIO');
-    console.log('='.repeat(50));
-    console.log(`📱 Login: http://localhost:${PORT}`);
-    console.log(`👨‍💼 Dashboard: http://localhost:${PORT}/dashboard`);
-    console.log(`🔐 Master Admin: http://localhost:${PORT}/admin`);
-    console.log(`🔑 Senha Master: ${ADMIN_PASSWORD}`);
-    console.log('='.repeat(50));
+initMySQL().then(() => {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log('='.repeat(50));
+        console.log('🚀 SISTEMA DE RIFA MULTI-USUÁRIO');
+        console.log('='.repeat(50));
+        console.log(`📱 Login: http://localhost:${PORT}`);
+        console.log(`👨‍💼 Dashboard: http://localhost:${PORT}/dashboard`);
+        console.log(`🔐 Master Admin: http://localhost:${PORT}/admin`);
+        console.log(`🔑 Senha Master: ${ADMIN_PASSWORD}`);
+        console.log('='.repeat(50));
+    });
 });
