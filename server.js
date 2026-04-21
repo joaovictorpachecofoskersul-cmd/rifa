@@ -161,15 +161,19 @@ function salvarUsuarios(usuarios) {
 }
 
 async function salvarUsuarioMySQL(usuario) {
-    if (!pool) return;
+    if (!pool) {
+        console.log('⚠️ MySQL não conectado, usuário salvo apenas no JSON');
+        return;
+    }
     try {
-        await pool.execute(
+        const [result] = await pool.execute(
             'INSERT INTO usuarios (id, nome, email, senha, empresa, data_criacao) VALUES (?, ?, ?, ?, ?, ?)',
             [usuario.id, usuario.nome, usuario.email, usuario.senha, usuario.empresa, usuario.data_criacao]
         );
-        console.log('✅ Usuario salvo no MySQL:', usuario.email);
+        console.log('✅ Usuario salvo no MySQL:', usuario.email, 'Resultado:', result);
     } catch (error) {
-        console.error('Erro ao salvar usuario no MySQL:', error);
+        console.error('❌ Erro detalhado ao salvar no MySQL:', error.message);
+        console.log('⚠️ Usuário salvo apenas no JSON');
     }
 }
 
