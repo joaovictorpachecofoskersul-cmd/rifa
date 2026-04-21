@@ -143,6 +143,23 @@
             .sidebar { width: 100%; height: auto; position: relative; }
             .main-content { margin-left: 0; }
         }
+        /* Estilo para upload de imagem no admin */
+#imagemRifaUpload {
+    padding: 12px;
+    background: #f9f9f9;
+    border: 1px dashed #667eea;
+    border-radius: 10px;
+    cursor: pointer;
+    width: 100%;
+}
+
+#imagemRifaUpload:hover {
+    background: #f0f0ff;
+}
+
+#previewImagemAdmin {
+    text-align: center;
+}
     </style>
 </head>
 <body>
@@ -239,14 +256,18 @@
                     <input type="text" id="adminWhatsapp">
                 </div>
                 <div class="grupo-config">
-                    <h3>🎨 Personalização</h3>
-                    <label>Imagem da Rifa (URL)</label>
-                    <input type="text" id="imagemRifa">
-                    <label>Cor Principal</label>
-                    <input type="color" id="corPrincipal" value="#667eea">
-                    <label>Cor Secundária</label>
-                    <input type="color" id="corSecundaria" value="#764ba2">
-                </div>
+    <h3>🎨 Personalização</h3>
+    <label>📸 Imagem da Rifa (Prêmio)</label>
+    <input type="file" id="imagemRifaUpload" accept="image/*" onchange="previewImagemAdmin(event)">
+    <div id="previewImagemAdmin" style="margin-top: 10px;"></div>
+    <small style="color: #666;">Clique para enviar imagem do seu celular ou computador (JPG, PNG, GIF - Máx 5MB)</small>
+    <input type="hidden" id="imagemRifa">
+    
+    <label style="margin-top: 15px;">🎨 Cor Principal</label>
+    <input type="color" id="corPrincipal" value="#667eea">
+    <label>🎨 Cor Secundária</label>
+    <input type="color" id="corSecundaria" value="#764ba2">
+</div>
                 <div class="grupo-config">
                     <h3>📄 Comprovante</h3>
                     <label>Mensagem Boas-vindas</label>
@@ -407,25 +428,69 @@
         } catch(e) { console.error('Historico error:', e); }
     }
 
-    async function carregarConfiguracoes() {
-        try {
-            const res = await fetch(`/api/user/rifa/${RIFA_ID_URL}/configuracoes`, { headers: getHeaders() });
-            const config = await res.json();
-            document.getElementById('nomeRifa').value = config.nome_rifa || '';
-            document.getElementById('descricaoRifa').value = config.descricao_rifa || '';
-            document.getElementById('valorRifa').value = config.valor_rifa || '';
-            document.getElementById('chavePix').value = config.chave_pix || '';
-            document.getElementById('adminWhatsapp').value = config.admin_whatsapp || '';
-            document.getElementById('imagemRifa').value = config.imagem_rifa || '';
-            document.getElementById('corPrincipal').value = config.cor_principal || '#667eea';
-            document.getElementById('corSecundaria').value = config.cor_secundaria || '#764ba2';
-            document.getElementById('mensagemBoasVindas').value = config.mensagem_boas_vindas || '';
-            document.getElementById('instrucoesPagamento').value = config.instrucoes_pagamento || '';
-            document.getElementById('rodapeComprovante').value = config.rodape_comprovante || '';
-            document.getElementById('mensagemWhatsApp').value = config.mensagem_whatsapp || '';
-            document.getElementById('mensagemGanhador').value = config.mensagem_ganhador || '';
-        } catch(e) { console.error('Config error:', e); }
+    // Preview da imagem no admin
+function previewImagemAdmin(event) {
+    const file = event.target.files[0];
+    if (file) {
+        // Verificar se é imagem
+        if (!file.type.startsWith('image/')) {
+            alert('Por favor, selecione um arquivo de imagem válido (JPG, PNG, GIF)');
+            return;
+        }
+        
+        // Verificar tamanho (máximo 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Imagem muito grande! Máximo 5MB.');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const imagemBase64 = e.target.result;
+            document.getElementById('previewImagemAdmin').innerHTML = `
+                <img src="${imagemBase64}" style="max-width: 100%; max-height: 150px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <button type="button" onclick="removerImagemAdmin()" style="margin-top: 5px; background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">🗑️ Remover imagem</button>
+            `;
+            document.getElementById('imagemRifa').value = imagemBase64;
+        };
+        reader.readAsDataURL(file);
     }
+}
+
+function removerImagemAdmin() {
+    document.getElementById('previewImagemAdmin').innerHTML = '';
+    document.getElementById('imagemRifa').value = '';
+    document.getElementById('imagemRifaUpload').value = '';
+}
+    
+    async function carregarConfiguracoes() {
+    try {
+        const res = await fetch(`/api/user/rifa/${RIFA_ID_URL}/configuracoes`, { headers: getHeaders() });
+        const config = await res.json();
+        document.getElementById('nomeRifa').value = config.nome_rifa || '';
+        document.getElementById('descricaoRifa').value = config.descricao_rifa || '';
+        document.getElementById('valorRifa').value = config.valor_rifa || '';
+        document.getElementById('chavePix').value = config.chave_pix || '';
+        document.getElementById('adminWhatsapp').value = config.admin_whatsapp || '';
+        document.getElementById('imagemRifa').value = config.imagem_rifa || '';
+        document.getElementById('corPrincipal').value = config.cor_principal || '#667eea';
+        document.getElementById('corSecundaria').value = config.cor_secundaria || '#764ba2';
+        document.getElementById('mensagemBoasVindas').value = config.mensagem_boas_vindas || '';
+        document.getElementById('instrucoesPagamento').value = config.instrucoes_pagamento || '';
+        document.getElementById('rodapeComprovante').value = config.rodape_comprovante || '';
+        document.getElementById('mensagemWhatsApp').value = config.mensagem_whatsapp || '';
+        document.getElementById('mensagemGanhador').value = config.mensagem_ganhador || '';
+        
+        // ========== ADICIONE ISSO PARA MOSTRAR A IMAGEM EXISTENTE ==========
+        if (config.imagem_rifa && config.imagem_rifa !== '') {
+            document.getElementById('previewImagemAdmin').innerHTML = `
+                <img src="${config.imagem_rifa}" style="max-width: 100%; max-height: 150px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <button type="button" onclick="removerImagemAdmin()" style="margin-top: 5px; background: #f44336; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">🗑️ Remover imagem</button>
+            `;
+        }
+        // ========== FIM ==========
+    } catch(e) { console.error('Config error:', e); }
+}
 
     async function salvarConfiguracoes() {
         const config = {
