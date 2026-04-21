@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minhas Rifas - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-name {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+        }
+
+        .btn-sair {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-sair:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .btn-nova-rifa {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 30px;
+            transition: transform 0.2s;
+        }
+
+        .btn-nova-rifa:hover {
+            transform: translateY(-2px);
+        }
+
+        .rifas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+        }
+
+        .rifa-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .rifa-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .rifa-card h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .rifa-card p {
+            color: #666;
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+
+        .status-ativa {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
+        .status-finalizada {
+            background: #f44336;
+        }
+
+        .rifa-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .stat {
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.7em;
+            color: #999;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .modal-content input,
+        .modal-content textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .modal-content button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        .modal-content button.cancelar {
+            background: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            .rifas-grid {
+                grid-template-columns: 1fr;
+            }
+            .header {
+                flex-direction: column;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎫 Minhas Rifas</h1>
+        <div class="user-info">
+            <span class="user-name">👤 <span id="usuarioNome"></span></span>
+            <button class="btn-sair" onclick="sair()">Sair</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <button class="btn-nova-rifa" onclick="abrirModalNovaRifa()">➕ Criar Nova Rifa</button>
+        
+        <div class="rifas-grid" id="rifasGrid">
+            <div class="loading">Carregando suas rifas...</div>
+        </div>
+    </div>
+
+    <!-- Modal Nova Rifa -->
+    <div id="modalNovaRifa" class="modal">
+        <div class="modal-content">
+            <h2>📝 Criar Nova Rifa</h2>
+            <input type="text" id="novaRifaNome" placeholder="Nome da Rifa (ex: Rifa de Natal)">
+            <textarea id="novaRifaDescricao" rows="3" placeholder="Descrição da rifa"></textarea>
+            <input type="number" id="novaRifaValor" step="0.01" placeholder="Valor por número (R$)">
+            <textarea id="novaRifaPremio" rows="2" placeholder="Prêmio (ex: R$ 10.000,00 + Moto 0km)"></textarea>
+            <button onclick="criarNovaRifa()">Criar Rifa</button>
+            <button class="cancelar" onclick="fecharModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <script>
+        const usuarioId = localStorage.getItem('usuarioId');
+        const usuarioNome = localStorage.getItem('usuarioNome');
+
+        if (!usuarioId) {
+            window.location.href = '/';
+        }
+
+        document.getElementById('usuarioNome').textContent = usuarioNome || 'Usuário';
+
+        function sair() {
+            localStorage.clear();
+            window.location.href = '/';
+        }
+
+        function abrirModalNovaRifa() {
+            document.getElementById('modalNovaRifa').style.display = 'flex';
+        }
+
+        function fecharModal() {
+            document.getElementById('modalNovaRifa').style.display = 'none';
+            document.getElementById('novaRifaNome').value = '';
+            document.getElementById('novaRifaDescricao').value = '';
+            document.getElementById('novaRifaValor').value = '';
+            document.getElementById('novaRifaPremio').value = '';
+        }
+
+        async function criarNovaRifa() {
+            const nome = document.getElementById('novaRifaNome').value;
+            const descricao = document.getElementById('novaRifaDescricao').value;
+            const valor = document.getElementById('novaRifaValor').value;
+            const premio = document.getElementById('novaRifaPremio').value;
+
+            if (!nome || !valor) {
+                alert('Preencha o nome e o valor da rifa!');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/rifas/nova', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'user-token': usuarioId
+                    },
+                    body: JSON.stringify({ 
+                        nome, 
+                        descricao, 
+                        valor: parseFloat(valor), 
+                        premio 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert('✅ Rifa criada com sucesso!');
+                    fecharModal();
+                    carregarRifas();
+                } else {
+                    alert('❌ Erro: ' + data.error);
+                }
+            } catch(error) {
+                alert('Erro ao criar rifa!');
+            }
+        }
+
+        async function carregarRifas() {
+            try {
+                const response = await fetch('/api/rifas', {
+                    headers: { 'user-token': usuarioId }
+                });
+                const rifas = await response.json();
+
+                const grid = document.getElementById('rifasGrid');
+
+                if (rifas.length === 0) {
+                    grid.innerHTML = '<div class="loading">📭 Você ainda não tem nenhuma rifa.<br>Clique em "Criar Nova Rifa" para começar!</div>';
+                    return;
+                }
+
+                grid.innerHTML = rifas.map(r => {
+                    const disponiveis = r.numeros ? r.numeros.filter(n => n.status === 'disponivel').length : 100;
+                    const vendidos = r.numeros ? r.numeros.filter(n => n.status === 'pago').length : 0;
+                    
+                    return `
+                        <div class="rifa-card" onclick="window.location.href='/admin?rifa=${r.id}'">
+                            <h3>🎫 ${r.nome}</h3>
+                            <p>📝 ${r.descricao || 'Sem descrição'}</p>
+                            <p>💰 Valor: R$ ${r.valor.toFixed(2)}</p>
+                            <p>🏆 ${r.premio || 'Prêmio não definido'}</p>
+                            <p><span class="status-ativa ${r.status === 'finalizada' ? 'status-finalizada' : ''}">${r.status === 'ativa' ? 'ATIVA' : 'FINALIZADA'}</span></p>
+                            <div class="rifa-stats">
+                                <div class="stat">
+                                    <div class="stat-value">${disponiveis}</div>
+                                    <div class="stat-label">Disponíveis</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${vendidos}</div>
+                                    <div class="stat-label">Vendidos</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="stat-value">${r.vendas ? r.vendas.filter(v => v.status_pagamento === 'pendente').length : 0}</div>
+                                    <div class="stat-label">Pendentes</div>
+                                </div>
+                            </div>
+                            <p style="font-size: 0.7em; color: #999; margin-top: 10px;">📅 ${new Date(r.data_criacao).toLocaleDateString()}</p>
+                        </div>
+                    `;
+                }).join('');
+            } catch(error) {
+                console.error(error);
+                document.getElementById('rifasGrid').innerHTML = '<div class="loading">Erro ao carregar rifas. Recarregue a página.</div>';
+            }
+        }
+
+        carregarRifas();
+    </script>
+</body>
+</html>
