@@ -204,35 +204,41 @@
         }
 
         async function criarRifa() {
-            const nome = document.getElementById('nomeRifa').value;
-            const descricao = document.getElementById('descricaoRifa').value;
-            const valor = parseFloat(document.getElementById('valorRifa').value);
-            const qtdNumeros = parseInt(document.getElementById('qtdNumeros').value);
-            const premio = document.getElementById('premioRifa').value;
+    const nome = document.getElementById('nomeRifa').value;
+    const descricao = document.getElementById('descricaoRifa').value;
+    const valor = parseFloat(document.getElementById('valorRifa').value);
+    const qtdNumeros = parseInt(document.getElementById('qtdNumeros').value);
+    const premio = document.getElementById('premioRifa').value;
 
-            if (!nome || !valor) {
-                alert('Preencha nome e valor!');
-                return;
-            }
+    if (!nome || !valor) {
+        alert('Preencha nome e valor!');
+        return;
+    }
 
-            const response = await fetch('/api/rifas/nova', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'user-token': usuarioId
-                },
-                body: JSON.stringify({ nome, descricao, valor, qtdNumeros, premio })
-            });
-            const data = await response.json();
+    const response = await fetch('/api/rifas/nova', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'user-token': usuarioId
+        },
+        body: JSON.stringify({ 
+            nome, 
+            descricao, 
+            valor, 
+            qtdNumeros,   // ← CAMPO IMPORTANTE
+            premio 
+        })
+    });
+    const data = await response.json();
 
-            if (data.success) {
-                alert('✅ Rifa criada com ' + qtdNumeros + ' números!');
-                fecharModal();
-                carregarRifas();
-            } else {
-                alert('Erro: ' + data.error);
-            }
-        }
+    if (data.success) {
+        alert('✅ Rifa criada com ' + qtdNumeros + ' números!');
+        fecharModal();
+        carregarRifas();
+    } else {
+        alert('Erro: ' + data.error);
+    }
+}
 
         async function carregarRifas() {
             const response = await fetch('/api/rifas', {
