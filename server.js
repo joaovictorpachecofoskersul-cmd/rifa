@@ -844,6 +844,10 @@ app.get('/rifa/:usuarioId/:rifaId', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'rifa.html'));
 });
 
+app.get('/master', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'master.html'));
+});
+
 // ============================================
 // INICIAR SERVIDOR
 // ============================================
