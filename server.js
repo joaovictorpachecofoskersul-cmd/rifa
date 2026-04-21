@@ -159,12 +159,12 @@ function salvarRifa(usuarioId, rifaId, data) {
     fs.writeFileSync(rifaPath, JSON.stringify(data, null, 2));
 }
 
-function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, premio) {
+function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio) {
     const rifaId = uuidv4();
-    const usuario = getUsuarioById(usuarioId);
+    const totalNumeros = Math.min(Math.max(parseInt(qtdNumeros) || 100, 10), 500); // entre 10 e 500
     
     const numeros = [];
-    for (let i = 1; i <= 100; i++) {
+    for (let i = 1; i <= totalNumeros; i++) {
         numeros.push({
             numero: i,
             status: 'disponivel',
@@ -182,6 +182,7 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, premio) {
         nome: nomeRifa,
         descricao: descricao,
         valor: parseFloat(valor),
+        total_numeros: totalNumeros,
         premio: premio,
         status: 'ativa',
         data_criacao: new Date().toISOString(),
@@ -190,7 +191,21 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, premio) {
         numeros: numeros,
         vendas: [],
         sorteios: [],
-        config: usuario.config // Copia as configurações do usuário
+        config: {
+            nome_rifa: nomeRifa,
+            descricao_rifa: descricao,
+            valor_rifa: parseFloat(valor),
+            chave_pix: '',
+            admin_whatsapp: '',
+            imagem_rifa: '',
+            cor_principal: '#667eea',
+            cor_secundaria: '#764ba2',
+            mensagem_boas_vindas: 'Obrigado por participar da nossa rifa!',
+            instrucoes_pagamento: '1. Faça o PIX para a chave acima\n2. Envie o comprovante\n3. Aguarde a confirmação',
+            rodape_comprovante: 'Boa sorte! 🍀',
+            mensagem_whatsapp: 'Olá {nome}!\n✅ Pagamento CONFIRMADO!\nNúmero: {numero}\nBoa sorte! 🍀',
+            mensagem_ganhador: '🎉 PARABÉNS {nome}!\nNúmero: {numero}\nEntre em contato! 🏆'
+        }
     };
     
     salvarRifa(usuarioId, rifaId, novaRifa);
@@ -210,7 +225,6 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, premio) {
     
     return novaRifa;
 }
-
 // ============================================
 // MIDDLEWARES
 // ============================================
@@ -415,13 +429,13 @@ app.get('/api/user/rifas', authUsuario, (req, res) => {
 });
 
 app.post('/api/user/rifas/nova', authUsuario, (req, res) => {
-    const { nome, descricao, valor, premio } = req.body;
+    const { nome, descricao, valor, qtdNumeros, premio } = req.body;
     
     if (!nome || !valor) {
         return res.status(400).json({ error: 'Nome e valor são obrigatórios!' });
     }
     
-    const novaRifa = criarNovaRifa(req.usuario.id, nome, descricao, valor, premio || '');
+    const novaRifa = criarNovaRifa(req.usuario.id, nome, descricao, valor, qtdNumeros || 100, premio || '');
     res.json({ success: true, rifa: novaRifa });
 });
 
