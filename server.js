@@ -7,23 +7,8 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const mysql = require('mysql2/promise');
-const express = require('express');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const { v4: uuidv4 } = require('uuid');
-const QRCode = require('qrcode');
-const path = require('path');
-const fs = require('fs');
-const bcrypt = require('bcryptjs');
-const mysql = require('mysql2/promise');
-const dataManager = require('./dataManager');  // ← ADICIONE ESTA LINHA AQUI
+const dataManager = require('./dataManager');
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'views')));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
