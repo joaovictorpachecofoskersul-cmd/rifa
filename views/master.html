@@ -21,6 +21,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .stats {
             display: grid;
@@ -48,15 +50,11 @@
             cursor: pointer;
             display: flex;
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .rifas-list { padding: 15px; display: none; }
         .rifas-list.show { display: block; }
-        .rifa-item {
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 10px;
-        }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
         .btn-logout {
@@ -69,6 +67,30 @@
         }
         .badge-ativa { background: #4caf50; color: white; padding: 4px 8px; border-radius: 5px; font-size: 0.8em; }
         .badge-finalizada { background: #f44336; color: white; padding: 4px 8px; border-radius: 5px; font-size: 0.8em; }
+        .link-vendas {
+            background: #25D366;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.8em;
+            display: inline-block;
+        }
+        .link-vendas:hover { background: #128C7E; }
+        .btn-copiar {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.7em;
+            margin-left: 5px;
+        }
+        @media (max-width: 768px) {
+            th, td { font-size: 0.8em; padding: 5px; }
+            .usuario-header { font-size: 0.9em; }
+        }
     </style>
 </head>
 <body>
@@ -112,11 +134,6 @@
                     
                     totalRifas += rifas.length;
                     
-                    for (const rifa of rifas) {
-                        totalVendas += rifa.vendas?.filter(v => v.status_pagamento === 'confirmado').length || 0;
-                        totalArrecadado += rifa.vendas?.filter(v => v.status_pagamento === 'confirmado').reduce((sum, v) => sum + v.valor_pago, 0) || 0;
-                    }
-                    
                     html += `
                         <div class="usuario-card">
                             <div class="usuario-header" onclick="toggleRifas('${usuario.id}')">
@@ -127,12 +144,26 @@
                             </div>
                             <div class="rifas-list" id="rifas-${usuario.id}">
                                 <table>
-                                    <thead><tr><th>Rifa</th><th>Status</th><th>Números</th><th>Vendidos</th><th>Arrecadado</th></thead>
+                                    <thead>
+                                        <tr>
+                                            <th>Rifa</th>
+                                            <th>Status</th>
+                                            <th>Números</th>
+                                            <th>Vendidos</th>
+                                            <th>Arrecadado</th>
+                                            <th>Link para Vendas</th>
+                                        </tr>
+                                    </thead>
                                     <tbody>
                     `;
                     for (const rifa of rifas) {
                         const vendidos = rifa.numeros?.filter(n => n.status === 'pago').length || 0;
                         const arrecadado = rifa.vendas?.filter(v => v.status_pagamento === 'confirmado').reduce((sum, v) => sum + v.valor_pago, 0) || 0;
+                        const linkVendas = `https://riifaonline.shop/rifa/${usuario.id}/${rifa.id}`;
+                        
+                        totalVendas += vendidos;
+                        totalArrecadado += arrecadado;
+                        
                         html += `
                             <tr>
                                 <td>${rifa.nome}</td>
@@ -140,6 +171,10 @@
                                 <td>${rifa.total_numeros || 0}</td>
                                 <td>${vendidos}</td>
                                 <td>R$ ${arrecadado.toFixed(2)}</td>
+                                <td>
+                                    <a href="${linkVendas}" target="_blank" class="link-vendas">🔗 Abrir Rifa</a>
+                                    <button class="btn-copiar" onclick="copiarLink('${linkVendas}')">📋 Copiar</button>
+                                </td>
                             </tr>
                         `;
                     }
@@ -158,12 +193,21 @@
             }
         }
         
+        function copiarLink(link) {
+            navigator.clipboard.writeText(link).then(() => {
+                alert('✅ Link copiado: ' + link);
+            }).catch(() => {
+                alert('❌ Erro ao copiar. Copie manualmente: ' + link);
+            });
+        }
+        
         function toggleRifas(id) {
             const el = document.getElementById(`rifas-${id}`);
             el.classList.toggle('show');
         }
         
         function logout() {
+            localStorage.removeItem('adminToken');
             window.location.href = '/admin';
         }
         
@@ -173,7 +217,6 @@
             carregarDados();
             setInterval(carregarDados, 30000);
         } else {
-            // Pedir senha
             const senha = prompt('Digite a senha master:');
             if (senha === ADMIN_TOKEN) {
                 localStorage.setItem('adminToken', senha);
