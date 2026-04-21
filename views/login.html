@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Rifa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.8em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .form {
+            display: none;
+        }
+
+        .form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button[type="submit"]:hover {
+            transform: translateY(-2px);
+        }
+
+        .error-msg {
+            color: #f44336;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+            font-size: 0.9em;
+        }
+
+        .success-msg {
+            color: #4caf50;
+            text-align: center;
+            margin-top: 15px;
+            display: none;
+            font-size: 0.9em;
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.8em;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎫 Sistema de Rifa</h1>
+        <div class="subtitle">Crie e gerencie suas rifas facilmente</div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="showTab('login')">Entrar</button>
+            <button class="tab-btn" onclick="showTab('cadastro')">Criar Conta</button>
+        </div>
+
+        <!-- Login -->
+        <div id="loginForm" class="form active">
+            <form onsubmit="fazerLogin(event)">
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" id="loginEmail" required placeholder="seu@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="loginSenha" required placeholder="••••••">
+                </div>
+                <button type="submit">Entrar no Sistema</button>
+                <div id="loginError" class="error-msg"></div>
+            </form>
+        </div>
+
+        <!-- Cadastro -->
+        <div id="cadastroForm" class="form">
+            <form onsubmit="fazerCadastro(event)">
+                <div class="form-group">
+                    <label>Nome da Empresa / Organizador</label>
+                    <input type="text" id="cadastroEmpresa" placeholder="Ex: Minha Rifa">
+                </div>
+                <div class="form-group">
+                    <label>Seu Nome Completo</label>
+                    <input type="text" id="cadastroNome" required placeholder="João Silva">
+                </div>
+                <div class="form-group">
+                    <label>E-mail</label>
+                    <input type="email" id="cadastroEmail" required placeholder="joao@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="cadastroSenha" required placeholder="••••••">
+                </div>
+                <div class="form-group">
+                    <label>Confirmar Senha</label>
+                    <input type="password" id="cadastroConfirmarSenha" required placeholder="••••••">
+                </div>
+                <button type="submit">Criar Conta</button>
+                <div id="cadastroError" class="error-msg"></div>
+                <div id="cadastroSuccess" class="success-msg"></div>
+            </form>
+        </div>
+
+        <div class="info">
+            💡 Após criar sua conta, você terá acesso ao painel administrativo<br>
+            para criar e gerenciar suas rifas.
+        </div>
+    </div>
+
+    <script>
+        function showTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.form').forEach(form => form.classList.remove('active'));
+            
+            if (tab === 'login') {
+                document.querySelector('.tab-btn:first-child').classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.querySelector('.tab-btn:last-child').classList.add('active');
+                document.getElementById('cadastroForm').classList.add('active');
+            }
+        }
+
+        async function fazerLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('loginEmail').value;
+            const senha = document.getElementById('loginSenha').value;
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, senha })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    localStorage.setItem('usuarioId', data.usuario.id);
+                    localStorage.setItem('usuarioNome', data.usuario.nome);
+                    window.location.href = '/dashboard';
+                } else {
+                    const errorDiv = document.getElementById('loginError');
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                    setTimeout(() => {
+                        errorDiv.style.display = 'none';
+                    }, 3000);
+                }
+            } catch(error) {
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.textContent = 'Erro ao conectar com o servidor!';
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        async function fazerCadastro(event) {
+            event.preventDefault();
+            
+            const nome = document.getElementById('cadastroNome').value;
+            const email = document.getElementById('cadastroEmail').value;
+            const senha = document.getElementById('cadastroSenha').value;
+            const confirmar = document.getElementById('cadastroConfirmarSenha').value;
+            const empresa = document.getElementById('cadastroEmpresa').value;
+            
+            if (senha !== confirmar) {
+                const errorDiv = document.getElementById('cadastroError');
+                errorDiv.textContent = 'As senhas não coincidem!';
+                errorDiv.style.display = 'block';
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 3000);
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/cadastrar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nome, email, senha, empresa })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    const successDiv = document.getElementById('cadastroSuccess');
+                    successDiv.textContent = 'Conta criada com sucesso! Redirecionando...';
+                    successDiv.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        showTab('login');
+                        document.getElementById('loginEmail').value = email;
+                        document.getElementById('cadastroSuccess').style.display = 'none';
+                    }, 2000);
+                } else {
+                    const errorDiv = document.getElementById('cadastroError');
+                    errorDiv.textContent = data.error;
+                    errorDiv.style.display = 'block';
+                    setTimeout(() => {
+                        errorDiv.style.display = 'none';
+                    }, 3000);
+                }
+            } catch(error) {
+                const errorDiv = document.getElementById('cadastroError');
+                errorDiv.textContent = 'Erro ao cadastrar! Tente novamente.';
+                errorDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
