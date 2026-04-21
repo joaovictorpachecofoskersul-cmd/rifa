@@ -21,9 +21,9 @@ const DATA_DIR = path.join(__dirname, 'data');
 const USUARIOS_DIR = path.join(DATA_DIR, 'usuarios');
 const RIFAS_DIR = path.join(DATA_DIR, 'rifas');
 
-const ADMIN_PASSWORD = 'admin123'; // 🔑 SENHA DO MASTER ADMIN
+const ADMIN_PASSWORD = 'admin123';
 
-// Criar pastas automaticamente
+// Criar pastas
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 if (!fs.existsSync(USUARIOS_DIR)) fs.mkdirSync(USUARIOS_DIR);
 if (!fs.existsSync(RIFAS_DIR)) fs.mkdirSync(RIFAS_DIR);
@@ -57,6 +57,26 @@ function criarUsuario(nome, email, senha, empresa) {
     const usuarioId = uuidv4();
     const hashedPassword = bcrypt.hashSync(senha, 10);
     
+    // Configuração padrão da rifa para este usuário
+    const configPadrao = {
+        nome_rifa: 'MEGA RIFA PREMIUM',
+        descricao_rifa: '🏆 Prêmio: R$ 10.000,00 + Moto 0km',
+        valor_rifa: 10.00,
+        chave_pix: '',
+        admin_whatsapp: '',
+        rifa_ativa: 'true',
+        ultimo_ganhador: '',
+        ultimo_ganhador_numero: '',
+        imagem_rifa: '',
+        cor_principal: '#667eea',
+        cor_secundaria: '#764ba2',
+        mensagem_boas_vindas: 'Obrigado por participar da nossa rifa!',
+        instrucoes_pagamento: '1. Faça o PIX para a chave acima\n2. Envie o comprovante\n3. Aguarde a confirmação',
+        rodape_comprovante: 'Boa sorte! 🍀\nSorteio ao atingir 100 números',
+        mensagem_whatsapp: 'Olá {nome}!\n✅ Pagamento CONFIRMADO!\nNúmero: {numero}\nBoa sorte! 🍀',
+        mensagem_ganhador: '🎉 PARABÉNS {nome}!\nNúmero: {numero}\nEntre em contato! 🏆'
+    };
+    
     const novoUsuario = {
         id: usuarioId,
         nome: nome,
@@ -64,8 +84,7 @@ function criarUsuario(nome, email, senha, empresa) {
         senha: hashedPassword,
         empresa: empresa || nome,
         data_criacao: new Date().toISOString(),
-        chave_pix: '',
-        whatsapp: '',
+        config: configPadrao,
         rifas: []
     };
     
@@ -76,7 +95,7 @@ function criarUsuario(nome, email, senha, empresa) {
     const userDir = path.join(RIFAS_DIR, usuarioId);
     if (!fs.existsSync(userDir)) fs.mkdirSync(userDir);
     
-    return { success: true, usuario: { id: usuarioId, nome, email, empresa } };
+    return { success: true, usuarioId: usuarioId };
 }
 
 function autenticarUsuario(email, senha) {
@@ -87,6 +106,11 @@ function autenticarUsuario(email, senha) {
     if (!bcrypt.compareSync(senha, usuario.senha)) return null;
     
     return usuario;
+}
+
+function getUsuarioById(usuarioId) {
+    const usuarios = carregarUsuarios();
+    return usuarios.find(u => u.id === usuarioId);
 }
 
 // ============================================
@@ -137,6 +161,7 @@ function salvarRifa(usuarioId, rifaId, data) {
 
 function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, premio) {
     const rifaId = uuidv4();
+    const usuario = getUsuarioById(usuarioId);
     
     const numeros = [];
     for (let i = 1; i <= 100; i++) {
@@ -164,7 +189,8 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, premio) {
         ultimo_ganhador_numero: null,
         numeros: numeros,
         vendas: [],
-        sorteios: []
+        sorteios: [],
+        config: usuario.config // Copia as configurações do usuário
     };
     
     salvarRifa(usuarioId, rifaId, novaRifa);
@@ -195,8 +221,7 @@ function authUsuario(req, res, next) {
         return res.status(401).json({ error: 'Usuário não autenticado!' });
     }
     
-    const usuarios = carregarUsuarios();
-    const usuario = usuarios.find(u => u.id === token);
+    const usuario = getUsuarioById(token);
     
     if (!usuario) {
         return res.status(401).json({ error: 'Usuário inválido!' });
@@ -256,49 +281,10 @@ app.post('/api/login', (req, res) => {
 });
 
 // ============================================
-// ROTAS DO USUÁRIO (Dashboard)
+// ROTAS PÚBLICAS PARA COMPRADORES (INDEX.HTML)
 // ============================================
 
-app.get('/api/rifas', authUsuario, (req, res) => {
-    const rifas = carregarRifas(req.usuario.id);
-    res.json(rifas);
-});
-
-app.post('/api/rifas/nova', authUsuario, (req, res) => {
-    const { nome, descricao, valor, premio } = req.body;
-    
-    if (!nome || !valor) {
-        return res.status(400).json({ error: 'Nome e valor são obrigatórios!' });
-    }
-    
-    const novaRifa = criarNovaRifa(req.usuario.id, nome, descricao, valor, premio || '');
-    res.json({ success: true, rifa: novaRifa });
-});
-
-app.get('/api/rifa/:rifaId', authUsuario, (req, res) => {
-    const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
-    res.json({
-        id: rifa.id,
-        nome: rifa.nome,
-        descricao: rifa.descricao,
-        valor: rifa.valor,
-        premio: rifa.premio,
-        status: rifa.status,
-        ultimo_ganhador: rifa.ultimo_ganhador,
-        ultimo_ganhador_numero: rifa.ultimo_ganhador_numero,
-        numeros: rifa.numeros.map(n => ({ numero: n.numero, status: n.status }))
-    });
-});
-
-// ============================================
-// ROTAS PÚBLICAS PARA COMPRADORES
-// ============================================
-
+// Rota para buscar dados da rifa (pública)
 app.get('/api/public/rifa/:usuarioId/:rifaId', (req, res) => {
     const rifa = carregarRifa(req.params.usuarioId, req.params.rifaId);
     
@@ -306,6 +292,7 @@ app.get('/api/public/rifa/:usuarioId/:rifaId', (req, res) => {
         return res.status(404).json({ error: 'Rifa não encontrada!' });
     }
     
+    // Retorna os dados públicos da rifa
     res.json({
         id: rifa.id,
         nome: rifa.nome,
@@ -315,10 +302,24 @@ app.get('/api/public/rifa/:usuarioId/:rifaId', (req, res) => {
         status: rifa.status,
         ultimo_ganhador: rifa.ultimo_ganhador,
         ultimo_ganhador_numero: rifa.ultimo_ganhador_numero,
-        numeros: rifa.numeros.map(n => ({ numero: n.numero, status: n.status }))
+        numeros: rifa.numeros.map(n => ({ numero: n.numero, status: n.status })),
+        // Configurações da rifa
+        nome_rifa: rifa.config?.nome_rifa || rifa.nome,
+        descricao_rifa: rifa.config?.descricao_rifa || rifa.descricao,
+        valor_rifa: rifa.config?.valor_rifa || rifa.valor,
+        chave_pix: rifa.config?.chave_pix || '',
+        admin_whatsapp: rifa.config?.admin_whatsapp || '',
+        rifa_ativa: rifa.status === 'ativa' ? 'true' : 'false',
+        imagem_rifa: rifa.config?.imagem_rifa || '',
+        cor_principal: rifa.config?.cor_principal || '#667eea',
+        cor_secundaria: rifa.config?.cor_secundaria || '#764ba2',
+        mensagem_boas_vindas: rifa.config?.mensagem_boas_vindas || '',
+        instrucoes_pagamento: rifa.config?.instrucoes_pagamento || '',
+        rodape_comprovante: rifa.config?.rodape_comprovante || ''
     });
 });
 
+// Rota para reservar números (pública)
 app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
     try {
         const { numeros, nome, telefone, email } = req.body;
@@ -391,7 +392,11 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
             total_numeros: numeros.length,
             valor_total: valorTotal,
             valor_unitario: rifa.valor,
-            nome_rifa: rifa.nome,
+            chave_pix: rifa.config?.chave_pix || '',
+            nome_rifa: rifa.config?.nome_rifa || rifa.nome,
+            mensagem_boas_vindas: rifa.config?.mensagem_boas_vindas || '',
+            instrucoes_pagamento: rifa.config?.instrucoes_pagamento || '',
+            rodape_comprovante: rifa.config?.rodape_comprovante || '',
             data: new Date().toISOString()
         });
     } catch (error) {
@@ -401,10 +406,30 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
 });
 
 // ============================================
-// ROTAS ADMIN DO USUÁRIO (Painel do Usuário)
+// ROTAS DO USUÁRIO (DASHBOARD)
 // ============================================
 
-app.get('/api/user/dashboard/:rifaId', authUsuario, (req, res) => {
+app.get('/api/user/rifas', authUsuario, (req, res) => {
+    const rifas = carregarRifas(req.usuario.id);
+    res.json(rifas);
+});
+
+app.post('/api/user/rifas/nova', authUsuario, (req, res) => {
+    const { nome, descricao, valor, premio } = req.body;
+    
+    if (!nome || !valor) {
+        return res.status(400).json({ error: 'Nome e valor são obrigatórios!' });
+    }
+    
+    const novaRifa = criarNovaRifa(req.usuario.id, nome, descricao, valor, premio || '');
+    res.json({ success: true, rifa: novaRifa });
+});
+
+// ============================================
+// ROTAS ADMIN DO USUÁRIO (PAINEL COMPLETO)
+// ============================================
+
+app.get('/api/user/rifa/:rifaId/dashboard', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -420,7 +445,7 @@ app.get('/api/user/dashboard/:rifaId', authUsuario, (req, res) => {
     res.json({ disponiveis, reservados, pagos, pendentes, total_arrecadado });
 });
 
-app.get('/api/user/vendas/:rifaId', authUsuario, (req, res) => {
+app.get('/api/user/rifa/:rifaId/vendas', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -430,7 +455,7 @@ app.get('/api/user/vendas/:rifaId', authUsuario, (req, res) => {
     res.json(rifa.vendas.filter(v => v.status_pagamento === 'pendente'));
 });
 
-app.get('/api/user/numeros/:rifaId', authUsuario, (req, res) => {
+app.get('/api/user/rifa/:rifaId/numeros', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -440,7 +465,7 @@ app.get('/api/user/numeros/:rifaId', authUsuario, (req, res) => {
     res.json(rifa.numeros);
 });
 
-app.post('/api/user/confirmar-pagamento/:rifaId', authUsuario, (req, res) => {
+app.post('/api/user/rifa/:rifaId/confirmar-pagamento', authUsuario, (req, res) => {
     const { venda_id, numero } = req.body;
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
@@ -465,7 +490,7 @@ app.post('/api/user/confirmar-pagamento/:rifaId', authUsuario, (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/user/cancelar-venda/:rifaId', authUsuario, (req, res) => {
+app.post('/api/user/rifa/:rifaId/cancelar-venda', authUsuario, (req, res) => {
     const { venda_id, numero } = req.body;
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
@@ -493,7 +518,7 @@ app.post('/api/user/cancelar-venda/:rifaId', authUsuario, (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/user/sortear/:rifaId', authUsuario, (req, res) => {
+app.post('/api/user/rifa/:rifaId/sortear', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -532,7 +557,7 @@ app.post('/api/user/sortear/:rifaId', authUsuario, (req, res) => {
     });
 });
 
-app.post('/api/user/reset-rifa/:rifaId', authUsuario, (req, res) => {
+app.post('/api/user/rifa/:rifaId/reset', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -563,7 +588,7 @@ app.post('/api/user/reset-rifa/:rifaId', authUsuario, (req, res) => {
     res.json({ success: true });
 });
 
-app.get('/api/user/historico/:rifaId', authUsuario, (req, res) => {
+app.get('/api/user/rifa/:rifaId/historico', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -573,11 +598,46 @@ app.get('/api/user/historico/:rifaId', authUsuario, (req, res) => {
     res.json(rifa.sorteios.reverse());
 });
 
+app.get('/api/user/rifa/:rifaId/configuracoes', authUsuario, (req, res) => {
+    const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
+    
+    if (!rifa) {
+        return res.status(404).json({ error: 'Rifa não encontrada!' });
+    }
+    
+    res.json(rifa.config || {});
+});
+
+app.post('/api/user/rifa/:rifaId/configuracoes', authUsuario, (req, res) => {
+    const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
+    
+    if (!rifa) {
+        return res.status(404).json({ error: 'Rifa não encontrada!' });
+    }
+    
+    const novasConfig = req.body;
+    rifa.config = { ...rifa.config, ...novasConfig };
+    salvarRifa(req.usuario.id, req.params.rifaId, rifa);
+    
+    res.json({ success: true });
+});
+
+app.get('/api/user/rifa/:rifaId/exportar', authUsuario, (req, res) => {
+    const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
+    
+    if (!rifa) {
+        return res.status(404).json({ error: 'Rifa não encontrada!' });
+    }
+    
+    const vendasConfirmadas = rifa.vendas.filter(v => v.status_pagamento === 'confirmado');
+    res.json(vendasConfirmadas);
+});
+
 // ============================================
 // ROTAS MASTER ADMIN
 // ============================================
 
-app.get('/api/admin/usuarios', authAdmin, (req, res) => {
+app.get('/api/master/usuarios', authAdmin, (req, res) => {
     const usuarios = carregarUsuarios();
     res.json(usuarios.map(u => ({
         id: u.id,
@@ -589,13 +649,13 @@ app.get('/api/admin/usuarios', authAdmin, (req, res) => {
     })));
 });
 
-app.get('/api/admin/usuario/:usuarioId/rifas', authAdmin, (req, res) => {
+app.get('/api/master/usuario/:usuarioId/rifas', authAdmin, (req, res) => {
     const rifas = carregarRifas(req.params.usuarioId);
     res.json(rifas);
 });
 
 // ============================================
-// ROTAS ESTÁTICAS (HTML)
+// ROTAS ESTÁTICAS
 // ============================================
 
 app.get('/', (req, res) => {
@@ -610,6 +670,7 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
 
+// Rota para a página de compra (index.html)
 app.get('/rifa/:usuarioId/:rifaId', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
