@@ -86,7 +86,7 @@ class DataManager {
             if (fs.existsSync(backupFile)) {
                 const data = fs.readFileSync(backupFile, 'utf8');
                 if (data && data.length > 0) {
-                    console.log('📦 Carregando do backup...');
+                    console.log('📦 Carregando usuários do backup...');
                     return JSON.parse(data);
                 }
             }
