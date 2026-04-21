@@ -570,14 +570,49 @@
                 if (data.success) {
                     // Preencher modal
                     document.getElementById('modalNomeRifa').textContent = data.nome_rifa || configRifa.nome_rifa;
-                    document.getElementById('modalQuantidade').textContent = data.total_numeros;
-                    document.getElementById('modalNumeros').textContent = data.numeros.map(n => n.numero).sort((a,b) => a-b).join(', ');
-                    document.getElementById('modalValorTotal').textContent = data.valor_total.toFixed(2).replace('.', ',');
-                    document.getElementById('modalQR').innerHTML = `<img src="${data.numeros[0].qrCode}" style="width: 120px;"><br><small>Comprovante único para todos os números</small>`;
+document.getElementById('modalQuantidade').textContent = data.total_numeros;
+document.getElementById('modalNumeros').textContent = data.numeros.map(n => n.numero).sort((a,b) => a-b).join(', ');
+document.getElementById('modalValorTotal').textContent = data.valor_total.toFixed(2).replace('.', ',');
+
+// ========== CÓDIGO NOVO DO QR CODE PIX ==========
+const modalQR = document.getElementById('modalQR');
+if (data.pix_qr_code && data.pix_qr_code !== '') {
+    // Mostrar QR Code do PIX
+    modalQR.innerHTML = `
+        <div style="background: white; padding: 15px; border-radius: 10px;">
+            <h4 style="color: #333; margin-bottom: 10px;">📱 QR Code PIX para pagamento</h4>
+            <img src="${data.pix_qr_code}" style="width: 200px; max-width: 100%; margin: 10px auto; display: block; border: 1px solid #ddd; border-radius: 10px;">
+            <p style="font-size: 0.8em; color: #666;">Escaneie o QR Code no seu banco para pagar</p>
+            <hr style="margin: 10px 0;">
+            <p style="font-size: 0.75em; color: #999;">ou copie a chave:</p>
+            <code style="background: #f0f0f0; padding: 8px; display: block; border-radius: 5px; word-break: break-all; font-size: 0.7em;">
+                ${data.chave_pix}
+            </code>
+            <button onclick="copiarChavePix()" style="background: #e0e0e0; color: #333; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 0.7em; margin-top: 5px; width: auto;">
+                📋 Copiar chave
+            </button>
+        </div>
+    `;
+} else {
+    // Fallback: mostrar apenas a chave PIX em texto
+    modalQR.innerHTML = `
+        <div style="background: #fff3cd; padding: 10px; border-radius: 5px;">
+            <p style="margin: 0 0 5px 0;">💡 <strong>Chave PIX para pagamento:</strong></p>
+            <code style="background: white; padding: 8px; display: block; border-radius: 5px; word-break: break-all;">
+                ${data.chave_pix || 'Chave não configurada'}
+            </code>
+            <p style="font-size: 0.7em; margin-top: 8px; color: #856404;">
+                Faça o PIX e envie o comprovante no WhatsApp
+            </p>
+        </div>
+    `;
+}
+// ========== FIM DO CÓDIGO NOVO ==========
+
+const codigoUnico = `RIFA-MULTI-${data.numeros[0].comprovante.split('-')[2]}`;
+document.getElementById('modalCodigoUnico').textContent = codigoUnico;
+document.getElementById('modalPix').textContent = data.chave_pix || configRifa.chave_pix || 'Chave PIX do organizador';
                     
-                    const codigoUnico = `RIFA-MULTI-${data.numeros[0].comprovante.split('-')[2]}`;
-                    document.getElementById('modalCodigoUnico').textContent = codigoUnico;
-                    document.getElementById('modalPix').textContent = data.chave_pix || configRifa.chave_pix || 'Chave PIX do organizador';
                     
                     // Mensagens personalizadas do comprovante
                     let mensagensHtml = '';
@@ -630,6 +665,19 @@
         function fecharModal() {
             document.getElementById('modal').style.display = 'none';
         }
+
+        function copiarChavePix() {
+    const chavePix = document.getElementById('modalPix').textContent;
+    if (chavePix && chavePix !== 'Chave PIX do organizador') {
+        navigator.clipboard.writeText(chavePix).then(() => {
+            alert('✅ Chave PIX copiada com sucesso!');
+        }).catch(() => {
+            alert('❌ Não foi possível copiar. Copie manualmente: ' + chavePix);
+        });
+    } else {
+        alert('⚠️ Nenhuma chave PIX configurada!');
+    }
+}
 
         // Inicializar
         if (usuarioIdUrl && rifaIdUrl) {
