@@ -16,37 +16,36 @@ app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'views')));
 
 // ============================================
-// CONEXÃO COM MySQL (NÃO MUDE NADA AQUI)
+// CONEXÃO COM MySQL (COM SEU USUÁRIO)
 // ============================================
-// COLOQUE SUAS CREDENCIAIS AQUI (as mesmas da Hostinger)
 const dbConfig = {
-    host: 'localhost',        // ou o host do seu MySQL
-    user: 'u519611382_rifa',      // COLOQUE SEU USUÁRIO
-    password: '21@Brasil21',    // COLOQUE SUA SENHA
-    database: 'u519611382_rifa',    // COLOQUE O NOME DO BANCO
+    host: 'localhost',
+    user: 'u519611382_rifa',           // SEU USUÁRIO
+    password: '21@Joao21',                       // VOCÊ COLOCA A SENHA
+    database: 'u519611382_rifa',       // SEU BANCO
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
 };
 
-let pool;
+let pool = null;
 
 async function initMySQL() {
     try {
         pool = await mysql.createPool(dbConfig);
         console.log('✅ MySQL conectado com sucesso!');
-        
-        // Criar tabelas se não existirem
         await criarTabelas();
+        return true;
     } catch (error) {
         console.error('❌ Erro ao conectar MySQL:', error.message);
         console.log('⚠️ Sistema continuará usando apenas JSON');
+        return false;
     }
 }
 
 async function criarTabelas() {
+    if (!pool) return;
     try {
-        // Tabela de usuários
         await pool.execute(`
             CREATE TABLE IF NOT EXISTS usuarios (
                 id VARCHAR(36) PRIMARY KEY,
@@ -59,7 +58,6 @@ async function criarTabelas() {
         `);
         console.log('✅ Tabela usuarios OK');
         
-        // Tabela de rifas
         await pool.execute(`
             CREATE TABLE IF NOT EXISTS rifas (
                 id VARCHAR(36) PRIMARY KEY,
@@ -73,13 +71,11 @@ async function criarTabelas() {
                 data_criacao DATETIME DEFAULT CURRENT_TIMESTAMP,
                 ultimo_ganhador VARCHAR(100),
                 ultimo_ganhador_numero INT,
-                config TEXT,
-                FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+                config TEXT
             )
         `);
         console.log('✅ Tabela rifas OK');
         
-        // Tabela de números
         await pool.execute(`
             CREATE TABLE IF NOT EXISTS numeros (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -91,13 +87,11 @@ async function criarTabelas() {
                 comprador_email VARCHAR(100),
                 comprovante_codigo VARCHAR(50),
                 data_reserva DATETIME,
-                data_confirmacao DATETIME,
-                FOREIGN KEY (rifa_id) REFERENCES rifas(id)
+                data_confirmacao DATETIME
             )
         `);
         console.log('✅ Tabela numeros OK');
         
-        // Tabela de vendas
         await pool.execute(`
             CREATE TABLE IF NOT EXISTS vendas (
                 id VARCHAR(36) PRIMARY KEY,
@@ -111,13 +105,11 @@ async function criarTabelas() {
                 status_pagamento VARCHAR(20) DEFAULT 'pendente',
                 valor_pago DECIMAL(10,2),
                 data_pedido DATETIME DEFAULT CURRENT_TIMESTAMP,
-                data_pagamento DATETIME,
-                FOREIGN KEY (rifa_id) REFERENCES rifas(id)
+                data_pagamento DATETIME
             )
         `);
         console.log('✅ Tabela vendas OK');
         
-        // Tabela de sorteios
         await pool.execute(`
             CREATE TABLE IF NOT EXISTS sorteios (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -126,8 +118,7 @@ async function criarTabelas() {
                 ganhador_nome VARCHAR(100),
                 ganhador_telefone VARCHAR(20),
                 ganhador_email VARCHAR(100),
-                data_sorteio DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (rifa_id) REFERENCES rifas(id)
+                data_sorteio DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
         console.log('✅ Tabela sorteios OK');
@@ -146,13 +137,12 @@ const RIFAS_DIR = path.join(DATA_DIR, 'rifas');
 
 const ADMIN_PASSWORD = 'admin123';
 
-// Criar pastas
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 if (!fs.existsSync(USUARIOS_DIR)) fs.mkdirSync(USUARIOS_DIR);
 if (!fs.existsSync(RIFAS_DIR)) fs.mkdirSync(RIFAS_DIR);
 
 // ============================================
-// FUNÇÕES DE USUÁRIOS (com MySQL + JSON)
+// FUNÇÕES DE USUÁRIOS
 // ============================================
 
 function carregarUsuarios() {
@@ -226,7 +216,6 @@ function criarUsuario(nome, email, senha, empresa) {
     usuarios.push(novoUsuario);
     salvarUsuarios(usuarios);
     
-    // Salvar também no MySQL
     salvarUsuarioMySQL(novoUsuario);
     
     const userDir = path.join(RIFAS_DIR, usuarioId);
@@ -294,8 +283,6 @@ function salvarRifa(usuarioId, rifaId, data) {
 function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio) {
     const rifaId = uuidv4();
     const totalNumeros = Math.min(Math.max(parseInt(qtdNumeros) || 100, 10), 500);
-    
-    console.log('Criando rifa com', totalNumeros, 'números');
     
     const numeros = [];
     for (let i = 1; i <= totalNumeros; i++) {
@@ -436,7 +423,7 @@ function authAdmin(req, res, next) {
 }
 
 // ============================================
-// ROTAS PÚBLICAS (Login/Cadastro)
+// ROTAS PÚBLICAS
 // ============================================
 
 app.post('/api/cadastrar', (req, res) => {
@@ -582,7 +569,6 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
                 const nomeOrganizador = req.usuario?.nome || rifa.config?.nome_organizador || 'Organizador';
                 const cidade = rifa.config?.cidade || 'Cidade';
                 pixQRCode = await gerarQRCodePix(chavePix, nomeOrganizador, cidade);
-                console.log('QR Code PIX gerado com sucesso');
             } catch(err) {
                 console.error('Erro ao gerar QR Code PIX:', err);
                 pixQRCode = '';
@@ -611,7 +597,7 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
 });
 
 // ============================================
-// ROTAS DO USUÁRIO (DASHBOARD) - tudo igual
+// ROTAS DO USUÁRIO (DASHBOARD)
 // ============================================
 
 app.get('/api/user/rifas', authUsuario, (req, res) => {
@@ -842,15 +828,15 @@ app.get('/rifa/:usuarioId/:rifaId', (req, res) => {
 // ============================================
 // INICIAR SERVIDOR
 // ============================================
-initMySQL().then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log('='.repeat(50));
-        console.log('🚀 SISTEMA DE RIFA MULTI-USUÁRIO');
-        console.log('='.repeat(50));
-        console.log(`📱 Login: http://localhost:${PORT}`);
-        console.log(`👨‍💼 Dashboard: http://localhost:${PORT}/dashboard`);
-        console.log(`🔐 Master Admin: http://localhost:${PORT}/admin`);
-        console.log(`🔑 Senha Master: ${ADMIN_PASSWORD}`);
-        console.log('='.repeat(50));
-    });
+// Inicia o servidor mesmo sem MySQL (não trava)
+initMySQL();
+app.listen(PORT, '0.0.0.0', () => {
+    console.log('='.repeat(50));
+    console.log('🚀 SISTEMA DE RIFA MULTI-USUÁRIO');
+    console.log('='.repeat(50));
+    console.log(`📱 Login: http://localhost:${PORT}`);
+    console.log(`👨‍💼 Dashboard: http://localhost:${PORT}/dashboard`);
+    console.log(`🔐 Master Admin: http://localhost:${PORT}/admin`);
+    console.log(`🔑 Senha Master: ${ADMIN_PASSWORD}`);
+    console.log('='.repeat(50));
 });
