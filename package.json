@@ -2,7 +2,13 @@
   "name": "sistema-rifa-multiusuario",
   "version": "2.0.0",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "backup": "node backup.js",
+    "diagnostic": "node diagnostic.js",
+    "pm2-start": "pm2 start ecosystem.config.js",
+    "pm2-stop": "pm2 stop sistema-rifa",
+    "pm2-restart": "pm2 restart sistema-rifa",
+    "pm2-logs": "pm2 logs sistema-rifa"
   },
   "dependencies": {
     "express": "^4.18.2",
