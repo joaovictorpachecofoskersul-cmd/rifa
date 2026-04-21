@@ -161,7 +161,9 @@ function salvarRifa(usuarioId, rifaId, data) {
 
 function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio) {
     const rifaId = uuidv4();
-    const totalNumeros = Math.min(Math.max(parseInt(qtdNumeros) || 100, 10), 500); // entre 10 e 500
+    const totalNumeros = Math.min(Math.max(parseInt(qtdNumeros) || 100, 10), 500);
+    
+    console.log('Criando rifa com', totalNumeros, 'números'); // DEBUG
     
     const numeros = [];
     for (let i = 1; i <= totalNumeros; i++) {
@@ -209,6 +211,22 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio
     };
     
     salvarRifa(usuarioId, rifaId, novaRifa);
+    
+    // Atualizar lista do usuário
+    const usuarios = carregarUsuarios();
+    const usuarioIndex = usuarios.findIndex(u => u.id === usuarioId);
+    if (usuarioIndex !== -1) {
+        usuarios[usuarioIndex].rifas.push({
+            id: rifaId,
+            nome: nomeRifa,
+            data_criacao: new Date().toISOString(),
+            status: 'ativa'
+        });
+        salvarUsuarios(usuarios);
+    }
+    
+    return novaRifa;
+}
     
     // Atualizar lista do usuário
     const usuarios = carregarUsuarios();
@@ -431,11 +449,14 @@ app.get('/api/user/rifas', authUsuario, (req, res) => {
 app.post('/api/user/rifas/nova', authUsuario, (req, res) => {
     const { nome, descricao, valor, qtdNumeros, premio } = req.body;
     
+    console.log('Recebido no servidor:', { nome, descricao, valor, qtdNumeros, premio }); // DEBUG
+    
     if (!nome || !valor) {
         return res.status(400).json({ error: 'Nome e valor são obrigatórios!' });
     }
     
-    const novaRifa = criarNovaRifa(req.usuario.id, nome, descricao, valor, qtdNumeros || 100, premio || '');
+    const quantidade = parseInt(qtdNumeros) || 100;
+    const novaRifa = criarNovaRifa(req.usuario.id, nome, descricao, valor, quantidade, premio || '');
     res.json({ success: true, rifa: novaRifa });
 });
 
