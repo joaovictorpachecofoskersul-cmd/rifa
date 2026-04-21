@@ -410,53 +410,69 @@
 
         console.log('IDs da URL:', { usuarioIdUrl, rifaIdUrl });
 
-        async function carregarConfiguracoes() {
-            try {
-                const response = await fetch(`/api/public/rifa/${usuarioIdUrl}/${rifaIdUrl}`);
-                const config = await response.json();
-                console.log('Configurações carregadas:', config);
-                
-                configRifa = config;
-                document.getElementById('nomeRifa').textContent = `🎫 ${config.nome_rifa || config.nome || 'MEGA RIFA PREMIUM'}`;
-                document.getElementById('descricaoRifa').textContent = config.descricao_rifa || config.descricao || '🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆';
-                
-                if (config.status === 'finalizada' || config.rifa_ativa === 'false') {
-                    rifaAtiva = false;
-                    document.getElementById('btnReservar').disabled = true;
-                    document.getElementById('avisoBloqueio').innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada! Aguarde a próxima rifa.</div>';
-                } else {
-                    if (!config.ultimo_ganhador || config.ultimo_ganhador === '') {
-                        document.getElementById('ganhadorBanner').innerHTML = '';
-                    } else {
-                        document.getElementById('ganhadorBanner').innerHTML = `
-                            <div class="ganhador-banner">
-                                🎉 ÚLTIMO GANHADOR! 🎉<br>
-                                <strong>Número ${config.ultimo_ganhador_numero}</strong> - ${config.ultimo_ganhador}
-                            </div>
-                        `;
-                    }
-                }
-                
-                if (config.imagem_rifa && config.imagem_rifa !== '') {
-                    document.getElementById('imagemRifa').innerHTML = `<img src="${config.imagem_rifa}" alt="Imagem da Rifa">`;
-                }
-                
-                if (config.cor_principal) {
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        .numero-item.disponivel { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
-                        .info-bar { background: ${config.cor_principal}; }
-                        button:not(.btn-whatsapp):not(.btn-fechar) { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
-                    `;
-                    document.head.appendChild(style);
-                }
-                
-                numeros = config.numeros || [];
-                atualizarGrid();
-            } catch (error) {
-                console.error('Erro ao carregar configurações:', error);
+       async function carregarConfiguracoes() {
+    try {
+        const response = await fetch(`/api/public/rifa/${usuarioIdUrl}/${rifaIdUrl}`);
+        const config = await response.json();
+        console.log('Configurações carregadas:', config);
+        
+        configRifa = config;
+        document.getElementById('nomeRifa').textContent = `🎫 ${config.nome_rifa || config.nome || 'MEGA RIFA PREMIUM'}`;
+        document.getElementById('descricaoRifa').textContent = config.descricao_rifa || config.descricao || '🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆';
+        
+        // ========== ALTERAÇÃO AQUI - MOSTRA O VENCEDOR QUANDO RIFA ENCERRADA ==========
+        if (config.status === 'finalizada' || config.rifa_ativa === 'false') {
+            rifaAtiva = false;
+            document.getElementById('btnReservar').disabled = true;
+            
+            // MOSTRA O VENCEDOR DE FORMA DESTACADA
+            document.getElementById('avisoBloqueio').innerHTML = `
+                <div class="rifa-bloqueada" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    🔒 RIFA ENCERRADA! 🔒<br><br>
+                    🏆 <strong style="font-size: 1.3em;">NÚMERO GANHADOR: ${config.ultimo_ganhador_numero || '?'}</strong> 🏆<br><br>
+                    👑 <strong>Ganhador(a): ${config.ultimo_ganhador || 'Aguardando sorteio'}</strong><br>
+                    📅 Sorteio realizado em: ${new Date(config.data_sorteio || Date.now()).toLocaleDateString('pt-BR')}
+                </div>
+            `;
+            
+            // ESCONDE O BANNER DE ÚLTIMO GANHADOR (já que já mostramos acima)
+            document.getElementById('ganhadorBanner').innerHTML = '';
+            
+        } else {
+            // RIFA AINDA ATIVA - MOSTRA ÚLTIMO GANHADOR SE EXISTIR
+            if (config.ultimo_ganhador && config.ultimo_ganhador !== '') {
+                document.getElementById('ganhadorBanner').innerHTML = `
+                    <div class="ganhador-banner">
+                        🎉 ÚLTIMO GANHADOR! 🎉<br>
+                        <strong>Número ${config.ultimo_ganhador_numero}</strong> - ${config.ultimo_ganhador}
+                    </div>
+                `;
+            } else {
+                document.getElementById('ganhadorBanner').innerHTML = '';
             }
         }
+        // ========== FIM DA ALTERAÇÃO ==========
+        
+        if (config.imagem_rifa && config.imagem_rifa !== '') {
+            document.getElementById('imagemRifa').innerHTML = `<img src="${config.imagem_rifa}" alt="Imagem da Rifa">`;
+        }
+        
+        if (config.cor_principal) {
+            const style = document.createElement('style');
+            style.textContent = `
+                .numero-item.disponivel { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
+                .info-bar { background: ${config.cor_principal}; }
+                button:not(.btn-whatsapp):not(.btn-fechar) { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        numeros = config.numeros || [];
+        atualizarGrid();
+    } catch (error) {
+        console.error('Erro ao carregar configurações:', error);
+    }
+}
 
         function atualizarGrid() {
             const grid = document.getElementById('gridNumeros');
