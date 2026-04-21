@@ -154,7 +154,6 @@
             <textarea id="descricaoRifa" rows="2" placeholder="Descrição"></textarea>
             <input type="number" id="valorRifa" step="0.01" placeholder="Valor por número (R$)">
             
-            <!-- OPÇÃO DE QUANTIDADE DE NÚMEROS -->
             <label style="font-weight: bold;">Quantidade de números:</label>
             <select id="qtdNumeros">
                 <option value="50">50 números</option>
@@ -204,48 +203,48 @@
         }
 
         async function criarRifa() {
-    const nome = document.getElementById('nomeRifa').value;
-    const descricao = document.getElementById('descricaoRifa').value;
-    const valor = parseFloat(document.getElementById('valorRifa').value);
-    const qtdNumeros = parseInt(document.getElementById('qtdNumeros').value);
-    const premio = document.getElementById('premioRifa').value;
+            const nome = document.getElementById('nomeRifa').value;
+            const descricao = document.getElementById('descricaoRifa').value;
+            const valor = parseFloat(document.getElementById('valorRifa').value);
+            const qtdNumeros = parseInt(document.getElementById('qtdNumeros').value);
+            const premio = document.getElementById('premioRifa').value;
 
-    if (!nome || !valor) {
-        alert('Preencha nome e valor!');
-        return;
-    }
+            if (!nome || !valor) {
+                alert('Preencha nome e valor!');
+                return;
+            }
 
-    console.log('Enviando:', { nome, descricao, valor, qtdNumeros, premio }); // DEBUG
+            console.log('Enviando:', { nome, descricao, valor, qtdNumeros, premio });
 
-    const response = await fetch('/api/user/rifas/nova', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'user-token': usuarioId
-        },
-        body: JSON.stringify({ 
-            nome, 
-            descricao, 
-            valor, 
-            qtdNumeros, 
-            premio 
-        })
-    });
-    
-    const data = await response.json();
-    console.log('Resposta:', data); // DEBUG
+            const response = await fetch('/api/user/rifas/nova', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'user-token': usuarioId
+                },
+                body: JSON.stringify({ 
+                    nome, 
+                    descricao, 
+                    valor, 
+                    qtdNumeros, 
+                    premio 
+                })
+            });
+            
+            const data = await response.json();
+            console.log('Resposta:', data);
 
-    if (data.success) {
-        alert('✅ Rifa criada com ' + qtdNumeros + ' números!');
-        fecharModal();
-        carregarRifas();
-    } else {
-        alert('Erro: ' + data.error);
-    }
-}
+            if (data.success) {
+                alert('✅ Rifa criada com ' + qtdNumeros + ' números!');
+                fecharModal();
+                carregarRifas();
+            } else {
+                alert('Erro: ' + data.error);
+            }
+        }
 
         async function carregarRifas() {
-            const response = await fetch('/api/rifas', {
+            const response = await fetch('/api/user/rifas', {
                 headers: { 'user-token': usuarioId }
             });
             const rifas = await response.json();
@@ -288,6 +287,7 @@
             alert('Link copiado! Compartilhe com seus clientes.');
         }
 
+        // Inicializar
         carregarRifas();
         setInterval(carregarRifas, 10000);
     </script>
