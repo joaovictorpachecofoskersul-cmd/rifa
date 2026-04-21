@@ -709,6 +709,10 @@ app.get('/api/master/usuario/:usuarioId/rifas', authAdmin, (req, res) => {
 // ============================================
 
 app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'index.html')); // NOVA PÁGINA INICIAL
+});
+
+app.get('/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'login.html'));
 });
 
@@ -721,7 +725,7 @@ app.get('/admin', (req, res) => {
 });
 
 app.get('/rifa/:usuarioId/:rifaId', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'index.html'));
+    res.sendFile(path.join(__dirname, 'views', 'rifa.html')); // SEU INDEX ANTIGO RENOMEADO
 });
 
 // ============================================
