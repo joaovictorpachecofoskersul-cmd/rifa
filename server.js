@@ -57,7 +57,6 @@ function criarUsuario(nome, email, senha, empresa) {
     const usuarioId = uuidv4();
     const hashedPassword = bcrypt.hashSync(senha, 10);
     
-    // Configuração padrão da rifa para este usuário
     const configPadrao = {
         nome_rifa: 'MEGA RIFA PREMIUM',
         descricao_rifa: '🏆 Prêmio: R$ 10.000,00 + Moto 0km',
@@ -91,7 +90,6 @@ function criarUsuario(nome, email, senha, empresa) {
     usuarios.push(novoUsuario);
     salvarUsuarios(usuarios);
     
-    // Criar pasta do usuário
     const userDir = path.join(RIFAS_DIR, usuarioId);
     if (!fs.existsSync(userDir)) fs.mkdirSync(userDir);
     
@@ -101,10 +99,8 @@ function criarUsuario(nome, email, senha, empresa) {
 function autenticarUsuario(email, senha) {
     const usuarios = carregarUsuarios();
     const usuario = usuarios.find(u => u.email === email);
-    
     if (!usuario) return null;
     if (!bcrypt.compareSync(senha, usuario.senha)) return null;
-    
     return usuario;
 }
 
@@ -120,7 +116,6 @@ function getUsuarioById(usuarioId) {
 function getRifaPath(usuarioId, rifaId = null) {
     const userDir = path.join(RIFAS_DIR, usuarioId);
     if (!fs.existsSync(userDir)) fs.mkdirSync(userDir);
-    
     if (rifaId) {
         return path.join(userDir, `${rifaId}.json`);
     }
@@ -130,7 +125,6 @@ function getRifaPath(usuarioId, rifaId = null) {
 function carregarRifas(usuarioId) {
     const userDir = getRifaPath(usuarioId);
     const rifas = [];
-    
     try {
         const files = fs.readdirSync(userDir);
         for (const file of files) {
@@ -140,7 +134,6 @@ function carregarRifas(usuarioId) {
             }
         }
     } catch(e) {}
-    
     return rifas;
 }
 
@@ -212,7 +205,6 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio
     
     salvarRifa(usuarioId, rifaId, novaRifa);
     
-    // Atualizar lista do usuário
     const usuarios = carregarUsuarios();
     const usuarioIndex = usuarios.findIndex(u => u.id === usuarioId);
     if (usuarioIndex !== -1) {
@@ -229,6 +221,35 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio
 }
 
 // ============================================
+// FUNÇÃO PARA GERAR QR CODE DO PIX
+// ============================================
+async function gerarQRCodePix(chavePix, nomeRecebedor, cidade, valor) {
+    // Formato BR Code para PIX estático
+    const valorFormatado = valor ? valor.toFixed(2).replace('.', '') : '';
+    const pixPayload = `00020101021126330014BR.GOV.BCB.PIX0111${chavePix}5204000053039865404${valorFormatado}5802BR5915${nomeRecebedor}6008${cidade}62070503***6304`;
+    // Calcular CRC16
+    const crc16 = (str) => {
+        let crc = 0xFFFF;
+        for (let i = 0; i < str.length; i++) {
+            crc ^= str.charCodeAt(i) << 8;
+            for (let j = 0; j < 8; j++) {
+                crc = (crc & 0x8000) ? (crc << 1) ^ 0x1021 : crc << 1;
+            }
+        }
+        return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+    };
+    const crc = crc16(pixPayload + '6304');
+    const payloadCompleto = pixPayload + crc;
+    
+    return await QRCode.toDataURL(payloadCompleto, {
+        errorCorrectionLevel: 'M',
+        margin: 2,
+        width: 250,
+        color: { dark: '#000000', light: '#ffffff' }
+    });
+}
+
+// ============================================
 // MIDDLEWARES
 // ============================================
 
@@ -237,13 +258,10 @@ function authUsuario(req, res, next) {
     if (!token) {
         return res.status(401).json({ error: 'Usuário não autenticado!' });
     }
-    
     const usuario = getUsuarioById(token);
-    
     if (!usuario) {
         return res.status(401).json({ error: 'Usuário inválido!' });
     }
-    
     req.usuario = usuario;
     next();
 }
@@ -263,29 +281,22 @@ function authAdmin(req, res, next) {
 
 app.post('/api/cadastrar', (req, res) => {
     const { nome, email, senha, empresa } = req.body;
-    
     if (!nome || !email || !senha) {
         return res.status(400).json({ error: 'Preencha todos os campos!' });
     }
-    
     const result = criarUsuario(nome, email, senha, empresa || '');
-    
     if (result.error) {
         return res.status(400).json(result);
     }
-    
     res.json(result);
 });
 
 app.post('/api/login', (req, res) => {
     const { email, senha } = req.body;
-    
     const usuario = autenticarUsuario(email, senha);
-    
     if (!usuario) {
         return res.status(401).json({ error: 'Email ou senha inválidos!' });
     }
-    
     res.json({
         success: true,
         usuario: {
@@ -301,15 +312,11 @@ app.post('/api/login', (req, res) => {
 // ROTAS PÚBLICAS PARA COMPRADORES (INDEX.HTML)
 // ============================================
 
-// Rota para buscar dados da rifa (pública)
 app.get('/api/public/rifa/:usuarioId/:rifaId', (req, res) => {
     const rifa = carregarRifa(req.params.usuarioId, req.params.rifaId);
-    
     if (!rifa) {
         return res.status(404).json({ error: 'Rifa não encontrada!' });
     }
-    
-    // Retorna os dados públicos da rifa
     res.json({
         id: rifa.id,
         nome: rifa.nome,
@@ -320,7 +327,6 @@ app.get('/api/public/rifa/:usuarioId/:rifaId', (req, res) => {
         ultimo_ganhador: rifa.ultimo_ganhador,
         ultimo_ganhador_numero: rifa.ultimo_ganhador_numero,
         numeros: rifa.numeros.map(n => ({ numero: n.numero, status: n.status })),
-        // Configurações da rifa
         nome_rifa: rifa.config?.nome_rifa || rifa.nome,
         descricao_rifa: rifa.config?.descricao_rifa || rifa.descricao,
         valor_rifa: rifa.config?.valor_rifa || rifa.valor,
@@ -336,7 +342,6 @@ app.get('/api/public/rifa/:usuarioId/:rifaId', (req, res) => {
     });
 });
 
-// Rota para reservar números (pública)
 app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
     try {
         const { numeros, nome, telefone, email } = req.body;
@@ -354,7 +359,6 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
             return res.status(400).json({ error: 'Nenhum número selecionado!' });
         }
         
-        // Verificar disponibilidade
         for (const numero of numeros) {
             const numeroObj = rifa.numeros.find(n => n.numero === numero);
             if (!numeroObj || numeroObj.status !== 'disponivel') {
@@ -368,10 +372,19 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
         const comprovanteId = uuidv4();
         const valorTotal = rifa.valor * numeros.length;
         const resultados = [];
+        const codigos = [];
         
         for (const numero of numeros) {
             const comprovanteCodigo = `RIFA-${numero}-${comprovanteId.slice(0, 8)}`.toUpperCase();
-            const qrCodeDataUrl = await QRCode.toDataURL(comprovanteCodigo);
+            codigos.push(comprovanteCodigo);
+            
+            // QR Code do comprovante (simples e escaneável)
+            const qrCodeDataUrl = await QRCode.toDataURL(comprovanteCodigo, {
+                errorCorrectionLevel: 'L',
+                margin: 1,
+                width: 200,
+                color: { dark: '#000000', light: '#ffffff' }
+            });
             
             const numeroObj = rifa.numeros.find(n => n.numero === numero);
             numeroObj.status = 'reservado';
@@ -403,6 +416,17 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
         
         salvarRifa(req.params.usuarioId, rifa.id, rifa);
         
+        // Gerar QR Code do PIX se houver chave PIX configurada
+        let pixQRCode = '';
+        const chavePix = rifa.config?.chave_pix || '';
+        if (chavePix && chavePix !== '') {
+            try {
+                pixQRCode = await gerarQRCodePix(chavePix, nome, 'Cidade', valorTotal);
+            } catch(err) {
+                console.error('Erro ao gerar QR Code PIX:', err);
+            }
+        }
+        
         res.json({
             success: true,
             numeros: resultados,
@@ -410,10 +434,12 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
             valor_total: valorTotal,
             valor_unitario: rifa.valor,
             chave_pix: rifa.config?.chave_pix || '',
+            pix_qr_code: pixQRCode,
             nome_rifa: rifa.config?.nome_rifa || rifa.nome,
             mensagem_boas_vindas: rifa.config?.mensagem_boas_vindas || '',
             instrucoes_pagamento: rifa.config?.instrucoes_pagamento || '',
             rodape_comprovante: rifa.config?.rodape_comprovante || '',
+            codigo_unico: codigos[0],
             data: new Date().toISOString()
         });
     } catch (error) {
@@ -433,13 +459,9 @@ app.get('/api/user/rifas', authUsuario, (req, res) => {
 
 app.post('/api/user/rifas/nova', authUsuario, (req, res) => {
     const { nome, descricao, valor, qtdNumeros, premio } = req.body;
-    
-    console.log('Recebido no servidor:', { nome, descricao, valor, qtdNumeros, premio });
-    
     if (!nome || !valor) {
         return res.status(400).json({ error: 'Nome e valor são obrigatórios!' });
     }
-    
     const quantidade = parseInt(qtdNumeros) || 100;
     const novaRifa = criarNovaRifa(req.usuario.id, nome, descricao, valor, quantidade, premio || '');
     res.json({ success: true, rifa: novaRifa });
@@ -451,77 +473,52 @@ app.post('/api/user/rifas/nova', authUsuario, (req, res) => {
 
 app.get('/api/user/dashboard/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     const disponiveis = rifa.numeros.filter(n => n.status === 'disponivel').length;
     const reservados = rifa.numeros.filter(n => n.status === 'reservado').length;
     const pagos = rifa.numeros.filter(n => n.status === 'pago').length;
     const pendentes = rifa.vendas.filter(v => v.status_pagamento === 'pendente').length;
     const total_arrecadado = rifa.vendas.filter(v => v.status_pagamento === 'confirmado').reduce((sum, v) => sum + v.valor_pago, 0);
-    
     res.json({ disponiveis, reservados, pagos, pendentes, total_arrecadado });
 });
 
 app.get('/api/user/vendas/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     res.json(rifa.vendas.filter(v => v.status_pagamento === 'pendente'));
 });
 
 app.get('/api/user/numeros/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     res.json(rifa.numeros);
 });
 
 app.post('/api/user/confirmar-pagamento/:rifaId', authUsuario, (req, res) => {
     const { venda_id, numero } = req.body;
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     const vendaIndex = rifa.vendas.findIndex(v => v.id === venda_id);
     if (vendaIndex !== -1) {
         rifa.vendas[vendaIndex].status_pagamento = 'confirmado';
         rifa.vendas[vendaIndex].data_pagamento = new Date().toISOString();
-        
         const numeroObj = rifa.numeros.find(n => n.numero === numero);
         if (numeroObj) {
             numeroObj.status = 'pago';
             numeroObj.data_confirmacao = new Date().toISOString();
         }
-        
         salvarRifa(req.usuario.id, req.params.rifaId, rifa);
     }
-    
     res.json({ success: true });
 });
 
 app.post('/api/user/cancelar-venda/:rifaId', authUsuario, (req, res) => {
     const { venda_id, numero } = req.body;
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     const vendaIndex = rifa.vendas.findIndex(v => v.id === venda_id);
     if (vendaIndex !== -1) {
         rifa.vendas[vendaIndex].status_pagamento = 'cancelado';
-        
         const numeroObj = rifa.numeros.find(n => n.numero === numero);
         if (numeroObj) {
             numeroObj.status = 'disponivel';
@@ -531,28 +528,19 @@ app.post('/api/user/cancelar-venda/:rifaId', authUsuario, (req, res) => {
             numeroObj.comprovante_codigo = null;
             numeroObj.data_reserva = null;
         }
-        
         salvarRifa(req.usuario.id, req.params.rifaId, rifa);
     }
-    
     res.json({ success: true });
 });
 
 app.post('/api/user/sortear/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     const pagos = rifa.numeros.filter(n => n.status === 'pago');
-    
     if (pagos.length === 0) {
         return res.status(400).json({ error: 'Não há números pagos!' });
     }
-    
     const sorteado = pagos[Math.floor(Math.random() * pagos.length)];
-    
     rifa.sorteios.push({
         id: Date.now(),
         numero: sorteado.numero,
@@ -561,13 +549,10 @@ app.post('/api/user/sortear/:rifaId', authUsuario, (req, res) => {
         ganhador_email: sorteado.comprador_email,
         data_sorteio: new Date().toISOString()
     });
-    
     rifa.status = 'finalizada';
     rifa.ultimo_ganhador = sorteado.comprador_nome;
     rifa.ultimo_ganhador_numero = sorteado.numero;
-    
     salvarRifa(req.usuario.id, req.params.rifaId, rifa);
-    
     res.json({
         success: true,
         numero: sorteado.numero,
@@ -579,12 +564,7 @@ app.post('/api/user/sortear/:rifaId', authUsuario, (req, res) => {
 
 app.post('/api/user/reset-rifa/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
-    // Resetar números
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     for (let i = 1; i <= rifa.numeros.length; i++) {
         const numeroObj = rifa.numeros.find(n => n.numero === i);
         if (numeroObj) {
@@ -597,35 +577,23 @@ app.post('/api/user/reset-rifa/:rifaId', authUsuario, (req, res) => {
             numeroObj.data_confirmacao = null;
         }
     }
-    
     rifa.vendas = [];
     rifa.status = 'ativa';
     rifa.ultimo_ganhador = null;
     rifa.ultimo_ganhador_numero = null;
-    
     salvarRifa(req.usuario.id, req.params.rifaId, rifa);
-    
     res.json({ success: true });
 });
 
 app.get('/api/user/historico/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     res.json(rifa.sorteios.reverse());
 });
 
 app.get('/api/user/rifa/:rifaId/configuracoes', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
-    // Retorna as configurações da rifa (ou padrão se não tiver)
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     const config = rifa.config || {
         nome_rifa: rifa.nome,
         descricao_rifa: rifa.descricao,
@@ -641,40 +609,25 @@ app.get('/api/user/rifa/:rifaId/configuracoes', authUsuario, (req, res) => {
         mensagem_whatsapp: 'Olá {nome}!\n✅ Pagamento CONFIRMADO!\nNúmero: {numero}\nBoa sorte! 🍀',
         mensagem_ganhador: '🎉 PARABÉNS {nome}!\nNúmero: {numero}\nEntre em contato! 🏆'
     };
-    
     res.json(config);
 });
 
 app.post('/api/user/rifa/:rifaId/configuracoes', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     const novasConfig = req.body;
-    
-    // Salvar configurações na rifa
     if (!rifa.config) rifa.config = {};
     Object.assign(rifa.config, novasConfig);
-    
-    // Atualizar também os campos principais da rifa
     if (novasConfig.nome_rifa) rifa.nome = novasConfig.nome_rifa;
     if (novasConfig.descricao_rifa) rifa.descricao = novasConfig.descricao_rifa;
     if (novasConfig.valor_rifa) rifa.valor = parseFloat(novasConfig.valor_rifa);
-    
     salvarRifa(req.usuario.id, req.params.rifaId, rifa);
-    
     res.json({ success: true });
 });
 
 app.get('/api/user/rifa/:rifaId/exportar', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
-    
-    if (!rifa) {
-        return res.status(404).json({ error: 'Rifa não encontrada!' });
-    }
-    
+    if (!rifa) return res.status(404).json({ error: 'Rifa não encontrada!' });
     const vendasConfirmadas = rifa.vendas.filter(v => v.status_pagamento === 'confirmado');
     res.json(vendasConfirmadas);
 });
@@ -716,7 +669,6 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'admin.html'));
 });
 
-// Rota para a página de compra (index.html)
 app.get('/rifa/:usuarioId/:rifaId', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'index.html'));
 });
