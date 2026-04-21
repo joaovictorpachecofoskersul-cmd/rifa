@@ -43,6 +43,21 @@ async function initMySQL() {
     }
 }
 
+// TESTE: Verificar se o MySQL está conectando (remova depois)
+setTimeout(async () => {
+    if (pool) {
+        try {
+            const [rows] = await pool.execute('SELECT COUNT(*) as total FROM usuarios');
+            console.log('✅ MySQL conectado! Usuários no banco:', rows[0].total);
+        } catch(e) {
+            console.log('❌ Erro no MySQL:', e.message);
+            console.log('⚠️ Verifique as credenciais do banco');
+        }
+    } else {
+        console.log('❌ Pool MySQL não inicializado');
+    }
+}, 3000); 
+
 async function criarTabelas() {
     if (!pool) return;
     try {
