@@ -21,9 +21,9 @@ app.use(express.static(path.join(__dirname, 'views')));
 // COLOQUE SUAS CREDENCIAIS AQUI (as mesmas da Hostinger)
 const dbConfig = {
     host: 'localhost',        // ou o host do seu MySQL
-    user: 'seu_usuario',      // COLOQUE SEU USUÁRIO
-    password: 'sua_senha',    // COLOQUE SUA SENHA
-    database: 'seu_banco',    // COLOQUE O NOME DO BANCO
+    user: 'u519611382_rifa',      // COLOQUE SEU USUÁRIO
+    password: '21@Brasil21',    // COLOQUE SUA SENHA
+    database: 'u519611382_rifa',    // COLOQUE O NOME DO BANCO
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
