@@ -223,59 +223,50 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio
 // ============================================
 // FUNÇÃO PARA GERAR QR CODE DO PIX
 // ============================================
-async function gerarQRCodePix(chavePix, nomeRecebedor, cidade, valor, descricao = 'Pagamento Rifa') {
+async function gerarQRCodePix(chavePix, nomeRecebedor, cidade) {
     try {
-        // Limpar chave PIX (remover espaços, traços, pontos)
+        // Limpar chave PIX
         const chaveLimpa = chavePix.replace(/\s+/g, '').replace(/[-\.]/g, '');
         
-        // Formatar valor (2 casas decimais, sem ponto)
-        const valorFormatado = valor.toFixed(2).replace('.', '');
-        
-        // Limitar tamanho dos campos (exigência do PIX)
+        // Limitar tamanho dos campos
         const nomeLimpo = nomeRecebedor.substring(0, 25).toUpperCase();
         const cidadeLimpa = cidade.substring(0, 15).toUpperCase();
         
-        // INÍCIO DO PAYLOAD PIX (formato BR Code)
+        // Payload PIX sem valor (o comprador define o valor)
         let payload = '';
         
-        // 1. Payload Format Indicator (00)
+        // 1. Payload Format Indicator
         payload += '000201';
         
-        // 2. Merchant Account Information (26)
-        // 2.1 GUI (00)
+        // 2. Merchant Account Information
         let gui = '0014BR.GOV.BCB.PIX';
-        // 2.2 Chave PIX (01) - com tamanho correto
         let chavePayload = `01${String(chaveLimpa.length).padStart(2, '0')}${chaveLimpa}`;
-        // 2.3 Merchant Account Information completa
         let mpi = gui + chavePayload;
         payload += `26${String(mpi.length).padStart(2, '0')}${mpi}`;
         
-        // 3. Merchant Category Code (52) - fixo 0000
+        // 3. Merchant Category Code
         payload += '52040000';
         
-        // 4. Transaction Currency (53) - 986 = BRL
+        // 4. Transaction Currency
         payload += '5303986';
         
-        // 5. Transaction Amount (54) - só inclui se tiver valor
-        if (valor > 0) {
-            payload += `54${String(valorFormatado.length).padStart(2, '0')}${valorFormatado}`;
-        }
+        // 5. SEM VALOR (omitir o campo 54)
         
-        // 6. Country Code (58) - BR
+        // 6. Country Code
         payload += '5802BR';
         
-        // 7. Merchant Name (59)
+        // 7. Merchant Name
         payload += `59${String(nomeLimpo.length).padStart(2, '0')}${nomeLimpo}`;
         
-        // 8. Merchant City (60)
+        // 8. Merchant City
         payload += `60${String(cidadeLimpa.length).padStart(2, '0')}${cidadeLimpa}`;
         
-        // 9. Additional Data Field (62) - opcional
+        // 9. Additional Data Field
         let txid = `RIFA${Date.now()}`.substring(0, 25);
         let additionalData = `05${String(txid.length).padStart(2, '0')}${txid}`;
         payload += `62${String(additionalData.length).padStart(2, '0')}${additionalData}`;
         
-        // 10. CRC16 (63) - será calculado
+        // 10. CRC16
         const crc16 = (str) => {
             let crc = 0xFFFF;
             for (let i = 0; i < str.length; i++) {
@@ -286,6 +277,23 @@ async function gerarQRCodePix(chavePix, nomeRecebedor, cidade, valor, descricao 
             }
             return (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
         };
+        
+        const crc = crc16(payload + '6304');
+        const payloadCompleto = payload + '6304' + crc;
+        
+        console.log('QR Code PIX gerado SEM valor fixo');
+        
+        return await QRCode.toDataURL(payloadCompleto, {
+            errorCorrectionLevel: 'H',
+            margin: 2,
+            width: 300
+        });
+        
+    } catch (error) {
+        console.error('Erro ao gerar QR Code PIX:', error);
+        return null;
+    }
+}
         
         const crc = crc16(payload + '6304');
         const payloadCompleto = payload + '6304' + crc;
