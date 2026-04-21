@@ -426,10 +426,10 @@ app.post('/api/user/rifas/nova', authUsuario, (req, res) => {
 });
 
 // ============================================
-// ROTAS ADMIN DO USUÁRIO (PAINEL COMPLETO)
+// ROTAS ADMIN DO USUÁRIO (Painel do Usuário)
 // ============================================
 
-app.get('/api/user/rifa/:rifaId/dashboard', authUsuario, (req, res) => {
+app.get('/api/user/dashboard/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -445,7 +445,7 @@ app.get('/api/user/rifa/:rifaId/dashboard', authUsuario, (req, res) => {
     res.json({ disponiveis, reservados, pagos, pendentes, total_arrecadado });
 });
 
-app.get('/api/user/rifa/:rifaId/vendas', authUsuario, (req, res) => {
+app.get('/api/user/vendas/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -455,7 +455,7 @@ app.get('/api/user/rifa/:rifaId/vendas', authUsuario, (req, res) => {
     res.json(rifa.vendas.filter(v => v.status_pagamento === 'pendente'));
 });
 
-app.get('/api/user/rifa/:rifaId/numeros', authUsuario, (req, res) => {
+app.get('/api/user/numeros/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -465,7 +465,7 @@ app.get('/api/user/rifa/:rifaId/numeros', authUsuario, (req, res) => {
     res.json(rifa.numeros);
 });
 
-app.post('/api/user/rifa/:rifaId/confirmar-pagamento', authUsuario, (req, res) => {
+app.post('/api/user/confirmar-pagamento/:rifaId', authUsuario, (req, res) => {
     const { venda_id, numero } = req.body;
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
@@ -490,7 +490,7 @@ app.post('/api/user/rifa/:rifaId/confirmar-pagamento', authUsuario, (req, res) =
     res.json({ success: true });
 });
 
-app.post('/api/user/rifa/:rifaId/cancelar-venda', authUsuario, (req, res) => {
+app.post('/api/user/cancelar-venda/:rifaId', authUsuario, (req, res) => {
     const { venda_id, numero } = req.body;
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
@@ -518,7 +518,7 @@ app.post('/api/user/rifa/:rifaId/cancelar-venda', authUsuario, (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/user/rifa/:rifaId/sortear', authUsuario, (req, res) => {
+app.post('/api/user/sortear/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -557,7 +557,7 @@ app.post('/api/user/rifa/:rifaId/sortear', authUsuario, (req, res) => {
     });
 });
 
-app.post('/api/user/rifa/:rifaId/reset', authUsuario, (req, res) => {
+app.post('/api/user/reset-rifa/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -565,7 +565,7 @@ app.post('/api/user/rifa/:rifaId/reset', authUsuario, (req, res) => {
     }
     
     // Resetar números
-    for (let i = 1; i <= 100; i++) {
+    for (let i = 1; i <= rifa.numeros.length; i++) {
         const numeroObj = rifa.numeros.find(n => n.numero === i);
         if (numeroObj) {
             numeroObj.status = 'disponivel';
@@ -588,7 +588,7 @@ app.post('/api/user/rifa/:rifaId/reset', authUsuario, (req, res) => {
     res.json({ success: true });
 });
 
-app.get('/api/user/rifa/:rifaId/historico', authUsuario, (req, res) => {
+app.get('/api/user/historico/:rifaId', authUsuario, (req, res) => {
     const rifa = carregarRifa(req.usuario.id, req.params.rifaId);
     
     if (!rifa) {
@@ -605,7 +605,24 @@ app.get('/api/user/rifa/:rifaId/configuracoes', authUsuario, (req, res) => {
         return res.status(404).json({ error: 'Rifa não encontrada!' });
     }
     
-    res.json(rifa.config || {});
+    // Retorna as configurações da rifa (ou padrão se não tiver)
+    const config = rifa.config || {
+        nome_rifa: rifa.nome,
+        descricao_rifa: rifa.descricao,
+        valor_rifa: rifa.valor,
+        chave_pix: '',
+        admin_whatsapp: '',
+        imagem_rifa: '',
+        cor_principal: '#667eea',
+        cor_secundaria: '#764ba2',
+        mensagem_boas_vindas: 'Obrigado por participar da nossa rifa!',
+        instrucoes_pagamento: '1. Faça o PIX para a chave acima\n2. Envie o comprovante\n3. Aguarde a confirmação',
+        rodape_comprovante: 'Boa sorte! 🍀',
+        mensagem_whatsapp: 'Olá {nome}!\n✅ Pagamento CONFIRMADO!\nNúmero: {numero}\nBoa sorte! 🍀',
+        mensagem_ganhador: '🎉 PARABÉNS {nome}!\nNúmero: {numero}\nEntre em contato! 🏆'
+    };
+    
+    res.json(config);
 });
 
 app.post('/api/user/rifa/:rifaId/configuracoes', authUsuario, (req, res) => {
@@ -616,7 +633,16 @@ app.post('/api/user/rifa/:rifaId/configuracoes', authUsuario, (req, res) => {
     }
     
     const novasConfig = req.body;
-    rifa.config = { ...rifa.config, ...novasConfig };
+    
+    // Salvar configurações na rifa
+    if (!rifa.config) rifa.config = {};
+    Object.assign(rifa.config, novasConfig);
+    
+    // Atualizar também os campos principais da rifa
+    if (novasConfig.nome_rifa) rifa.nome = novasConfig.nome_rifa;
+    if (novasConfig.descricao_rifa) rifa.descricao = novasConfig.descricao_rifa;
+    if (novasConfig.valor_rifa) rifa.valor = parseFloat(novasConfig.valor_rifa);
+    
     salvarRifa(req.usuario.id, req.params.rifaId, rifa);
     
     res.json({ success: true });
@@ -632,7 +658,6 @@ app.get('/api/user/rifa/:rifaId/exportar', authUsuario, (req, res) => {
     const vendasConfirmadas = rifa.vendas.filter(v => v.status_pagamento === 'confirmado');
     res.json(vendasConfirmadas);
 });
-
 // ============================================
 // ROTAS MASTER ADMIN
 // ============================================
