@@ -2,8 +2,8 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Mega Rifa - Escolha seu Número</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Comprar Números - Rifa</title>
     <style>
         * {
             margin: 0;
@@ -48,7 +48,6 @@
             border-radius: 15px;
             text-align: center;
             margin-bottom: 20px;
-            font-size: 0.9em;
         }
 
         .rifa-bloqueada {
@@ -59,21 +58,8 @@
             text-align: center;
             margin-bottom: 20px;
             font-weight: bold;
-            font-size: 0.9em;
         }
 
-        .imagem-rifa {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .imagem-rifa img {
-            max-width: 100%;
-            max-height: 150px;
-            border-radius: 10px;
-        }
-
-        /* INFO BAR */
         .info-bar {
             background: #667eea;
             color: white;
@@ -108,10 +94,8 @@
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.8em;
         }
 
-        /* LEGENDA */
         .legenda {
             display: flex;
             gap: 12px;
@@ -141,7 +125,6 @@
         .cor.pago { background: #f44336; }
         .cor.selected { background: #2196F3; }
 
-        /* TABELA DE NÚMEROS - OTIMIZADA PARA CELULAR */
         .grid-numeros {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -162,56 +145,23 @@
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
         }
 
-        /* Tablet e Desktop */
         @media (min-width: 768px) {
-            body {
-                padding: 20px;
-            }
-            .container {
-                padding: 30px;
-            }
-            h1 {
-                font-size: 1.8em;
-            }
+            body { padding: 20px; }
+            .container { padding: 30px; }
+            h1 { font-size: 1.8em; }
             .grid-numeros {
                 grid-template-columns: repeat(10, 1fr);
                 gap: 10px;
                 padding: 20px;
             }
-            .numero-item {
-                font-size: 1.2em;
-            }
-            .legenda-item {
-                font-size: 0.9em;
-            }
-            .info-bar {
-                padding: 15px 20px;
-            }
-            .numeros-selecionados {
-                font-size: 1em;
-            }
+            .numero-item { font-size: 1.2em; }
         }
 
-        /* Celular pequeno */
         @media (max-width: 480px) {
-            .grid-numeros {
-                gap: 6px;
-                padding: 8px;
-            }
-            .numero-item {
-                font-size: 0.85em;
-                border-radius: 8px;
-            }
-            .info-bar {
-                flex-direction: column;
-                text-align: center;
-            }
-            .total-valor {
-                font-size: 1em;
-            }
+            .grid-numeros { gap: 6px; padding: 8px; }
+            .numero-item { font-size: 0.85em; }
         }
 
         .numero-item.disponivel {
@@ -233,28 +183,17 @@
             text-decoration: line-through;
         }
 
-        .numero-item.disponivel:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 10px rgba(76,175,80,0.4);
-        }
-
         .numero-item.selected {
             background: #2196F3 !important;
             box-shadow: 0 0 0 2px #ff9800;
             transform: scale(1.02);
         }
 
-        /* FORMULÁRIO */
         .form-area {
             background: #f9f9f9;
             padding: 15px;
             border-radius: 15px;
             margin-top: 20px;
-        }
-
-        .form-area h3 {
-            font-size: 1.1em;
-            margin-bottom: 15px;
         }
 
         .form-group {
@@ -287,11 +226,6 @@
             font-size: 1em;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
         }
 
         button:disabled {
@@ -299,7 +233,6 @@
             cursor: not-allowed;
         }
 
-        /* MODAL */
         .modal {
             display: none;
             position: fixed;
@@ -324,11 +257,6 @@
             overflow-y: auto;
         }
 
-        .modal-content h2 {
-            font-size: 1.3em;
-            margin-bottom: 15px;
-        }
-
         .info-pagamento {
             background: #f5f5f5;
             padding: 12px;
@@ -337,41 +265,16 @@
             text-align: left;
             font-size: 0.85em;
         }
-
-        .numeros-reservados-list {
-            background: #e8f5e9;
-            padding: 8px;
-            border-radius: 8px;
-            margin: 10px 0;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-
-        .btn-whatsapp {
-            background: #25D366;
-            margin-top: 10px;
-        }
-
-        .btn-whatsapp:hover {
-            background: #128C7E;
-        }
-
-        .btn-fechar {
-            background: #666;
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1 id="nomeRifa">🎫 MEGA RIFA PREMIUM</h1>
-        <div class="subtitle" id="descricaoRifa">🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆</div>
+        <h1 id="nomeRifa">🎫 Carregando...</h1>
+        <div class="subtitle" id="descricaoRifa"></div>
 
         <div id="ganhadorBanner"></div>
-        <div id="imagemRifa" class="imagem-rifa"></div>
         <div id="avisoBloqueio"></div>
 
-        <!-- BARRA DE INFORMAÇÕES -->
         <div class="info-bar">
             <div class="numeros-selecionados">
                 📌 <strong id="qtdSelecionados">0</strong> número(s): 
@@ -383,7 +286,6 @@
             <button class="btn-limpar" onclick="limparTudo()">🗑️ Limpar</button>
         </div>
 
-        <!-- LEGENDA -->
         <div class="legenda">
             <div class="legenda-item"><div class="cor disponivel"></div><span>Disponível</span></div>
             <div class="legenda-item"><div class="cor reservado"></div><span>Reservado</span></div>
@@ -391,132 +293,67 @@
             <div class="legenda-item"><div class="cor selected"></div><span>Selecionado</span></div>
         </div>
 
-        <!-- GRID DE NÚMEROS -->
         <div class="grid-numeros" id="gridNumeros"></div>
 
-        <!-- FORMULÁRIO -->
         <div class="form-area">
             <h3>📝 Finalizar Compra</h3>
-            
             <div class="form-group">
                 <label>Nome completo</label>
                 <input type="text" id="nome" placeholder="Digite seu nome completo">
             </div>
-            
             <div class="form-group">
                 <label>WhatsApp (com DDD)</label>
                 <input type="tel" id="telefone" placeholder="(11) 99999-9999">
             </div>
-            
             <div class="form-group">
                 <label>E-mail</label>
                 <input type="email" id="email" placeholder="seu@email.com">
             </div>
-            
             <button id="btnReservar" disabled>🔒 Reservar Número(s)</button>
         </div>
     </div>
 
-    <!-- MODAL -->
     <div id="modal" class="modal">
         <div class="modal-content">
             <h2>✅ Reserva Realizada!</h2>
-            <div class="info-pagamento">
-                <p><strong>🎫 Rifa:</strong> <span id="modalNomeRifa"></span></p>
-                <p><strong>🔢 Quantidade:</strong> <span id="modalQuantidade"></span> números</p>
-                <p><strong>📌 Números:</strong> <span id="modalNumeros"></span></p>
-                <p><strong>💰 Valor Total:</strong> R$ <span id="modalValorTotal"></span></p>
-                <p><strong>📋 Código:</strong> <span id="modalCodigoUnico"></span></p>
-                <div id="modalQR" style="margin: 15px 0; text-align: center;"></div>
-                <p><strong>📱 Chave PIX:</strong> <span id="modalPix"></span></p>
-                <hr>
-                <div id="mensagensComprovante"></div>
-            </div>
-            
-            <p style="color: #f44336; font-weight: bold; font-size: 0.8em;">
-                ⚠️ APÓS O PAGAMENTO, ENVIE O COMPROVANTE!
-            </p>
-            
-            <button id="btnWhatsApp" class="btn-whatsapp">📱 Enviar via WhatsApp</button>
-            <button onclick="fecharModal()" class="btn-fechar">Fechar</button>
+            <div class="info-pagamento" id="modalInfo"></div>
+            <button onclick="fecharModal()" style="background: #666;">Fechar</button>
         </div>
     </div>
 
     <script>
+        const pathParts = window.location.pathname.split('/');
+        const usuarioIdUrl = pathParts[2];
+        const rifaIdUrl = pathParts[3];
+
         let numeros = [];
         let numerosSelecionados = [];
-        let configRifa = {};
-        let rifaAtiva = true;
+        let rifaData = {};
 
-        function carregarConfiguracoes() {
-            fetch('/api/configuracoes')
-                .then(res => res.json())
-                .then(config => {
-                    configRifa = config;
-                    document.getElementById('nomeRifa').textContent = `🎫 ${config.nome_rifa || 'MEGA RIFA PREMIUM'}`;
-                    document.getElementById('descricaoRifa').textContent = config.descricao_rifa || '🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆';
-                    
-                    if (config.rifa_ativa === 'false') {
-                        rifaAtiva = false;
-                        document.getElementById('btnReservar').disabled = true;
-                        document.getElementById('avisoBloqueio').innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada! Aguarde a próxima rifa.</div>';
-                    } else {
-                        // Se a rifa está ativa, garantir que o banner do ganhador seja limpo se não houver ganhador recente
-                        if (!config.ultimo_ganhador || config.ultimo_ganhador === '') {
-                            document.getElementById('ganhadorBanner').innerHTML = '';
-                        }
-                    }
-                    
-                    if (config.imagem_rifa && config.imagem_rifa !== '') {
-                        document.getElementById('imagemRifa').innerHTML = `<img src="${config.imagem_rifa}" alt="Imagem da Rifa">`;
-                    }
-                    
-                    if (config.cor_principal) {
-                        const style = document.createElement('style');
-                        style.textContent = `
-                            .numero-item.disponivel { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
-                            .info-bar { background: ${config.cor_principal}; }
-                            button:not(.btn-whatsapp):not(.btn-fechar) { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
-                        `;
-                        document.head.appendChild(style);
-                    }
-                });
-        }
-
-        function carregarUltimoSorteio() {
-            fetch('/api/ultimo-sorteio')
-                .then(res => res.json())
-                .then(sorteio => {
-                    // Só mostra o banner se houver sorteio E a rifa estiver finalizada
-                    if (sorteio && sorteio.numero && configRifa.rifa_ativa === 'false') {
-                        document.getElementById('ganhadorBanner').innerHTML = `
-                            <div class="ganhador-banner">
-                                🎉 ÚLTIMO GANHADOR! 🎉<br>
-                                <strong>Número ${sorteio.numero}</strong> - ${sorteio.ganhador_nome}<br>
-                                Sorteio em ${new Date(sorteio.data_sorteio).toLocaleDateString()}
-                            </div>
-                        `;
-                    } else {
-                        // Se a rifa está ativa, esconde o banner
-                        document.getElementById('ganhadorBanner').innerHTML = '';
-                    }
-                });
-        }
-
-        function carregarNumeros() {
-            fetch('/api/numeros')
-                .then(res => res.json())
-                .then(data => {
-                    numeros = data.numeros;
-                    rifaAtiva = data.rifa_ativa;
-                    atualizarGrid();
-                    
-                    if (!rifaAtiva) {
-                        document.getElementById('btnReservar').disabled = true;
-                    }
-                    // Recarregar o banner para garantir consistência
-                    carregarUltimoSorteio();
-                });
+        async function carregarRifa() {
+            const response = await fetch(`/api/public/rifa/${usuarioIdUrl}/${rifaIdUrl}`);
+            const data = await response.json();
+            rifaData = data;
+            
+            document.getElementById('nomeRifa').textContent = `🎫 ${data.nome}`;
+            document.getElementById('descricaoRifa').textContent = data.descricao || data.premio || '';
+            
+            if (data.status === 'finalizada') {
+                document.getElementById('avisoBloqueio').innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada!</div>';
+                document.getElementById('btnReservar').disabled = true;
+            }
+            
+            if (data.ultimo_ganhador) {
+                document.getElementById('ganhadorBanner').innerHTML = `
+                    <div class="ganhador-banner">
+                        🎉 ÚLTIMO GANHADOR! 🎉<br>
+                        <strong>Número ${data.ultimo_ganhador_numero}</strong> - ${data.ultimo_ganhador}
+                    </div>
+                `;
+            }
+            
+            numeros = data.numeros;
+            atualizarGrid();
         }
 
         function atualizarGrid() {
@@ -528,7 +365,7 @@
                 div.className = `numero-item ${num.status}`;
                 div.textContent = num.numero;
                 
-                if (num.status === 'disponivel' && rifaAtiva) {
+                if (num.status === 'disponivel' && rifaData.status === 'ativa') {
                     div.onclick = () => toggleSelecionarNumero(num.numero);
                 }
                 
@@ -541,18 +378,12 @@
         }
 
         function toggleSelecionarNumero(numero) {
-            if (!rifaAtiva) {
-                alert('⚠️ Esta rifa já foi finalizada!');
-                return;
-            }
-            
             const index = numerosSelecionados.indexOf(numero);
             if (index === -1) {
                 numerosSelecionados.push(numero);
             } else {
                 numerosSelecionados.splice(index, 1);
             }
-            
             atualizarInterface();
         }
 
@@ -572,8 +403,7 @@
             });
             
             const qtd = numerosSelecionados.length;
-            const valorUnitario = parseFloat(configRifa.valor_rifa || 10);
-            const total = qtd * valorUnitario;
+            const total = qtd * rifaData.valor;
             
             document.getElementById('qtdSelecionados').textContent = qtd;
             
@@ -589,97 +419,62 @@
             }
         }
 
-        document.getElementById('btnReservar').onclick = () => {
-            if (!rifaAtiva) {
-                alert('⚠️ Esta rifa já foi finalizada!');
-                return;
-            }
-            
+        document.getElementById('btnReservar').onclick = async () => {
             const nome = document.getElementById('nome').value;
             const telefone = document.getElementById('telefone').value;
             const email = document.getElementById('email').value;
             
             if (!nome || !telefone || !email) {
-                alert('⚠️ Preencha todos os campos!');
+                alert('Preencha todos os campos!');
                 return;
             }
             
             if (numerosSelecionados.length === 0) {
-                alert('⚠️ Selecione pelo menos um número!');
+                alert('Selecione pelo menos um número!');
                 return;
             }
             
-            fetch('/api/reservar-multiplos', {
+            const response = await fetch(`/api/public/rifa/${usuarioIdUrl}/${rifaIdUrl}/reservar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     numeros: numerosSelecionados,
-                    nome: nome,
-                    telefone: telefone,
-                    email: email
+                    nome, telefone, email
                 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    document.getElementById('modalNomeRifa').textContent = data.nome_rifa || configRifa.nome_rifa;
-                    document.getElementById('modalQuantidade').textContent = data.total_numeros;
-                    document.getElementById('modalNumeros').textContent = data.numeros.map(n => n.numero).sort((a,b) => a-b).join(', ');
-                    document.getElementById('modalValorTotal').textContent = data.valor_total.toFixed(2).replace('.', ',');
-                    document.getElementById('modalQR').innerHTML = `<img src="${data.numeros[0].qrCode}" style="width: 120px;"><br><small>Comprovante único</small>`;
-                    
-                    const codigoUnico = `RIFA-MULTI-${data.numeros[0].comprovante.split('-')[2]}`;
-                    document.getElementById('modalCodigoUnico').textContent = codigoUnico;
-                    document.getElementById('modalPix').textContent = data.chave_pix;
-                    
-                    let mensagensHtml = '';
-                    if (data.mensagem_boas_vindas) mensagensHtml += `<p>📢 ${data.mensagem_boas_vindas}</p>`;
-                    if (data.instrucoes_pagamento) mensagensHtml += `<p>📝 ${data.instrucoes_pagamento.replace(/\n/g, '<br>')}</p>`;
-                    if (data.rodape_comprovante) mensagensHtml += `<p>✨ ${data.rodape_comprovante.replace(/\n/g, '<br>')}</p>`;
-                    document.getElementById('mensagensComprovante').innerHTML = mensagensHtml;
-                    
-                    const btnWhatsApp = document.getElementById('btnWhatsApp');
-                    const adminWhatsApp = configRifa.admin_whatsapp || '55999999999';
-                    
-                    const mensagemAdmin = `*NOVA RESERVA DE RIFA* 🎫%0A%0A` +
-                        `*Cliente:* ${nome}%0A` +
-                        `*Telefone:* ${telefone}%0A` +
-                        `*Email:* ${email}%0A` +
-                        `*Números:* ${data.numeros.map(n => n.numero).sort((a,b) => a-b).join(', ')}%0A` +
-                        `*Quantidade:* ${data.total_numeros} números%0A` +
-                        `*Valor Total:* R$ ${data.valor_total.toFixed(2)}%0A%0A` +
-                        `✅ Aguardando confirmação de pagamento!`;
-                    
-                    btnWhatsApp.onclick = () => {
-                        window.open(`https://wa.me/55${adminWhatsApp}?text=${mensagemAdmin}`, '_blank');
-                    };
-                    
-                    document.getElementById('modal').style.display = 'flex';
-                    
-                    document.getElementById('nome').value = '';
-                    document.getElementById('telefone').value = '';
-                    document.getElementById('email').value = '';
-                    limparTudo();
-                    
-                    carregarNumeros();
-                } else {
-                    alert('❌ ' + data.error);
-                    if (data.numero_indisponivel) {
-                        carregarNumeros();
-                        limparTudo();
-                    }
-                }
             });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                document.getElementById('modalInfo').innerHTML = `
+                    <p><strong>✅ Reserva confirmada!</strong></p>
+                    <p>📌 Números: ${data.numeros.map(n => n.numero).join(', ')}</p>
+                    <p>💰 Total: R$ ${data.valor_total.toFixed(2)}</p>
+                    <p>🔑 Use o código: ${data.numeros[0].comprovante}</p>
+                    <p>📱 Envie o comprovante para o organizador</p>
+                `;
+                document.getElementById('modal').style.display = 'flex';
+                
+                document.getElementById('nome').value = '';
+                document.getElementById('telefone').value = '';
+                document.getElementById('email').value = '';
+                limparTudo();
+                carregarRifa();
+            } else {
+                alert('Erro: ' + data.error);
+                if (data.numero_indisponivel) {
+                    carregarRifa();
+                    limparTudo();
+                }
+            }
         };
 
         function fecharModal() {
             document.getElementById('modal').style.display = 'none';
         }
 
-        carregarConfiguracoes();
-        carregarUltimoSorteio();
-        carregarNumeros();
-        setInterval(carregarNumeros, 5000);
+        carregarRifa();
+        setInterval(carregarRifa, 5000);
     </script>
 </body>
 </html>
