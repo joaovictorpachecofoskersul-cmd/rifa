@@ -221,7 +221,7 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio
 }
 
 // ============================================
-// FUNÇÃO PARA GERAR QR CODE DO PIX
+// FUNÇÃO PARA GERAR QR CODE DO PIX (CORRIGIDA - SEM DUPLICAÇÃO)
 // ============================================
 async function gerarQRCodePix(chavePix, nomeRecebedor, cidade) {
     try {
@@ -292,39 +292,6 @@ async function gerarQRCodePix(chavePix, nomeRecebedor, cidade) {
     } catch (error) {
         console.error('Erro ao gerar QR Code PIX:', error);
         return null;
-    }
-}
-        
-        const crc = crc16(payload + '6304');
-        const payloadCompleto = payload + '6304' + crc;
-        
-        console.log('Payload PIX gerado (tamanho):', payloadCompleto.length);
-        console.log('Payload PIX (primeiros 100 chars):', payloadCompleto.substring(0, 100));
-        
-        // Gerar QR Code com configurações otimizadas
-        const qrCode = await QRCode.toDataURL(payloadCompleto, {
-            errorCorrectionLevel: 'H', // High para melhor escaneabilidade
-            margin: 4, // Margem maior
-            width: 300,
-            color: {
-                dark: '#000000',
-                light: '#FFFFFF'
-            }
-        });
-        
-        return qrCode;
-        
-    } catch (error) {
-        console.error('Erro ao gerar QR Code PIX:', error);
-        // Fallback: gerar QR Code com URL de pagamento
-        const valorStr = valor.toFixed(2).replace('.', ',');
-        const textoAlternativo = `Chave PIX: ${chavePix}\nValor: R$ ${valorStr}\nNome: ${nomeRecebedor}`;
-        
-        return await QRCode.toDataURL(textoAlternativo, {
-            errorCorrectionLevel: 'H',
-            margin: 2,
-            width: 300
-        });
     }
 }
 
@@ -457,7 +424,6 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
             const comprovanteCodigo = `RIFA-${numero}-${comprovanteId.slice(0, 8)}`.toUpperCase();
             codigos.push(comprovanteCodigo);
             
-            // QR Code do comprovante (simples e escaneável)
             const qrCodeDataUrl = await QRCode.toDataURL(comprovanteCodigo, {
                 errorCorrectionLevel: 'L',
                 margin: 1,
@@ -495,23 +461,22 @@ app.post('/api/public/rifa/:usuarioId/:rifaId/reservar', async (req, res) => {
         
         salvarRifa(req.params.usuarioId, rifa.id, rifa);
         
-       // Gerar QR Code do PIX se houver chave PIX configurada
-let pixQRCode = '';
-const chavePix = rifa.config?.chave_pix || '';
-if (chavePix && chavePix !== '') {
-    try {
-        const nomeOrganizador = req.usuario?.nome || rifa.config?.nome_organizador || 'Organizador';
-        const cidade = rifa.config?.cidade || 'Cidade';
-        
-        // GERAR QR CODE SEM VALOR
-        pixQRCode = await gerarQRCodePix(chavePix, nomeOrganizador, cidade);
-        
-        console.log('QR Code PIX gerado com sucesso (sem valor fixo)');
-    } catch(err) {
-        console.error('Erro ao gerar QR Code PIX:', err);
-        pixQRCode = '';
-    }
-}
+        // Gerar QR Code do PIX se houver chave PIX configurada
+        let pixQRCode = '';
+        const chavePix = rifa.config?.chave_pix || '';
+        if (chavePix && chavePix !== '') {
+            try {
+                const nomeOrganizador = req.usuario?.nome || rifa.config?.nome_organizador || 'Organizador';
+                const cidade = rifa.config?.cidade || 'Cidade';
+                
+                pixQRCode = await gerarQRCodePix(chavePix, nomeOrganizador, cidade);
+                
+                console.log('QR Code PIX gerado com sucesso (sem valor fixo)');
+            } catch(err) {
+                console.error('Erro ao gerar QR Code PIX:', err);
+                pixQRCode = '';
+            }
+        }
         
         res.json({
             success: true,
