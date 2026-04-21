@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>RifaOnline.Shop - Crie sua Rifa Online em Minutos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255,255,255,0.98);
+            padding: 15px 20px;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 1.5em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo span {
+            font-size: 0.8em;
+            display: block;
+            color: #666;
+            -webkit-text-fill-color: #666;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-nav {
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn-login {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-login:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
+        .btn-cadastro {
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-cadastro:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 120px 20px 60px;
+            text-align: center;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 2.2em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .hero p {
+            font-size: 1.1em;
+            max-width: 600px;
+            margin: 0 auto 30px;
+            opacity: 0.95;
+        }
+
+        .btn-hero {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 15px 35px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .btn-hero:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+
+        /* Stats */
+        .stats {
+            background: rgba(255,255,255,0.1);
+            padding: 40px 20px;
+            margin: 20px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 30px;
+            text-align: center;
+        }
+
+        .stat-item h3 {
+            font-size: 2em;
+            color: white;
+        }
+
+        .stat-item p {
+            color: rgba(255,255,255,0.9);
+            font-size: 0.9em;
+        }
+
+        /* Features */
+        .features {
+            background: white;
+            padding: 60px 20px;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2em;
+            color: #333;
+            margin-bottom: 40px;
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            text-align: center;
+            padding: 30px;
+            border-radius: 15px;
+            background: #f9f9f9;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        /* How it works */
+        .how-it-works {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%);
+            padding: 60px 20px;
+        }
+
+        .steps-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .step {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .step-number {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 0 auto 15px;
+        }
+
+        .step h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .step p {
+            color: #666;
+        }
+
+        /* CTA */
+        .cta {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 60px 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .cta h2 {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+
+        .cta p {
+            margin-bottom: 30px;
+            opacity: 0.95;
+        }
+
+        .btn-cta {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 15px 35px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s;
+            margin: 0 10px;
+        }
+
+        .btn-cta-outline {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+
+        .btn-cta:hover, .btn-cta-outline:hover {
+            transform: scale(1.05);
+        }
+
+        /* Footer */
+        .footer {
+            background: #1a1a2e;
+            color: white;
+            padding: 40px 20px 20px;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .footer-section h4 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .footer-section p {
+            color: #aaa;
+            line-height: 1.6;
+        }
+
+        .footer-section a {
+            color: #aaa;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .footer-section a:hover {
+            color: #667eea;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+            color: #888;
+            font-size: 0.85em;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 1.5em;
+            }
+            
+            .hero p {
+                font-size: 1em;
+            }
+            
+            .section-title {
+                font-size: 1.5em;
+            }
+            
+            .btn-cta {
+                display: block;
+                margin: 10px 20px;
+            }
+            
+            .nav-buttons {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .header-content {
+                flex-direction: column;
+            }
+            
+            .stats {
+                margin: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                padding: 100px 15px 40px;
+            }
+            
+            .feature-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                🎫 RifaOnline.Shop
+                <span>Sistema completo de rifas</span>
+            </div>
+            <div class="nav-buttons">
+                <a href="/login" class="btn-nav btn-login">🔐 Área do Organizador</a>
+                <a href="/cadastro" class="btn-nav btn-cadastro">📝 Criar Conta</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero">
+        <h1>🚀 Crie sua Rifa Online em Minutos!</h1>
+        <p>Plataforma completa para você organizar suas rifas de forma profissional, automática e segura.</p>
+        <a href="/cadastro" class="btn-hero">👉 Começar Agora - Grátis!</a>
+    </section>
+
+    <section class="stats">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <h3>100%</h3>
+                <p>Automatizado</p>
+            </div>
+            <div class="stat-item">
+                <h3>PIX</h3>
+                <p>Integrado</p>
+            </div>
+            <div class="stat-item">
+                <h3>WhatsApp</h3>
+                <p>Notificações</p>
+            </div>
+            <div class="stat-item">
+                <h3>24/7</h3>
+                <p>Disponível</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <h2 class="section-title">✨ Por que escolher nossa plataforma?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Fácil de Usar</h3>
+                <p>Crie sua rifa em poucos cliques. Sistema intuitivo e simples para todos.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>100% Responsivo</h3>
+                <p>Funciona perfeitamente no celular, tablet e computador. Seus clientes compram de qualquer lugar.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💰</div>
+                <h3>PIX Automático</h3>
+                <p>Gere QR Code PIX automaticamente para cada compra. Mais segurança e praticidade.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Painel Completo</h3>
+                <p>Acompanhe vendas, números disponíveis, reservados e pagos em tempo real.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>WhatsApp Integrado</h3>
+                <p>Notificações automáticas e comunicação direta com seus clientes.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Segurança Total</h3>
+                <p>Dados protegidos e sistema confiável para você e seus compradores.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="how-it-works">
+        <h2 class="section-title">📌 Como Funciona?</h2>
+        <div class="steps-grid">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Crie sua Conta</h3>
+                <p>Cadastre-se gratuitamente e crie sua primeira rifa em minutos.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Configure sua Rifa</h3>
+                <p>Defina nome, valor, quantidade de números, prêmios e chave PIX.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Compartilhe o Link</h3>
+                <p>Divulgue seu link personalizado nas redes sociais e WhatsApp.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">4</div>
+                <h3>Acompanhe as Vendas</h3>
+                <p>Gerencie tudo pelo painel, confirme pagamentos e sorteie!</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <h2>🎉 Pronto para começar sua rifa?</h2>
+        <p>Milhares de organizadores já usam nossa plataforma. Seja o próximo!</p>
+        <div>
+            <a href="/cadastro" class="btn-cta">📝 Criar Conta Grátis</a>
+            <a href="/login" class="btn-cta btn-cta-outline">🔐 Já tenho conta</a>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>🎫 RifaOnline.Shop</h4>
+                <p>Plataforma completa para criação e gestão de rifas online. Fácil, rápido e profissional.</p>
+            </div>
+            <div class="footer-section">
+                <h4>Links Rápidos</h4>
+                <a href="/login">Área do Organizador</a>
+                <a href="/cadastro">Criar Conta</a>
+            </div>
+            <div class="footer-section">
+                <h4>Contato</h4>
+                <p>📧 suporte@rifaonline.shop</p>
+                <p>💬 Disponível 24/7</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>Uma Iniciativa Acreditar Software © 2026 - Todos os direitos reservados</p>
+        </div>
+    </footer>
+
+    <script>
+        // Animações simples ao scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.feature-card, .step').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(30px)';
+            el.style.transition = 'all 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
