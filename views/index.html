@@ -28,7 +28,6 @@
             position: relative;
         }
 
-        /* BOTÃO DO ORGANIZADOR */
         .btn-organizador {
             position: absolute;
             top: 20px;
@@ -41,9 +40,7 @@
             cursor: pointer;
             font-size: 0.8em;
             font-weight: bold;
-            transition: background 0.3s;
             text-decoration: none;
-            display: inline-block;
             z-index: 10;
         }
 
@@ -72,7 +69,6 @@
             border-radius: 15px;
             text-align: center;
             margin-bottom: 20px;
-            font-size: 0.9em;
         }
 
         .rifa-bloqueada {
@@ -83,7 +79,6 @@
             text-align: center;
             margin-bottom: 20px;
             font-weight: bold;
-            font-size: 0.9em;
         }
 
         .imagem-rifa {
@@ -131,7 +126,6 @@
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.8em;
         }
 
         .legenda {
@@ -183,64 +177,26 @@
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s;
-            -webkit-tap-highlight-color: transparent;
         }
 
         @media (min-width: 768px) {
-            body {
-                padding: 20px;
-            }
-            .container {
-                padding: 30px;
-            }
-            h1 {
-                font-size: 1.8em;
-            }
+            body { padding: 20px; }
+            .container { padding: 30px; }
+            h1 { font-size: 1.8em; }
             .grid-numeros {
                 grid-template-columns: repeat(10, 1fr);
                 gap: 10px;
                 padding: 20px;
             }
-            .numero-item {
-                font-size: 1.2em;
-            }
-            .legenda-item {
-                font-size: 0.9em;
-            }
-            .info-bar {
-                padding: 15px 20px;
-            }
-            .numeros-selecionados {
-                font-size: 1em;
-            }
+            .numero-item { font-size: 1.2em; }
         }
 
         @media (max-width: 480px) {
-            .grid-numeros {
-                gap: 6px;
-                padding: 8px;
-            }
-            .numero-item {
-                font-size: 0.85em;
-                border-radius: 8px;
-            }
-            .info-bar {
-                flex-direction: column;
-                text-align: center;
-            }
-            .total-valor {
-                font-size: 1em;
-            }
-            h1 {
-                padding-right: 0;
-                margin-top: 35px;
-            }
-            .btn-organizador {
-                top: 10px;
-                right: 10px;
-                font-size: 0.7em;
-                padding: 5px 10px;
-            }
+            .grid-numeros { gap: 6px; padding: 8px; }
+            .numero-item { font-size: 0.85em; }
+            .info-bar { flex-direction: column; text-align: center; }
+            h1 { padding-right: 0; margin-top: 35px; }
+            .btn-organizador { top: 10px; right: 10px; font-size: 0.7em; padding: 5px 10px; }
         }
 
         .numero-item.disponivel {
@@ -260,11 +216,6 @@
             color: white;
             cursor: not-allowed;
             text-decoration: line-through;
-        }
-
-        .numero-item.disponivel:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 3px 10px rgba(76,175,80,0.4);
         }
 
         .numero-item.selected {
@@ -315,11 +266,6 @@
             font-size: 1em;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
         }
 
         button:disabled {
@@ -365,15 +311,6 @@
             font-size: 0.85em;
         }
 
-        .numeros-reservados-list {
-            background: #e8f5e9;
-            padding: 8px;
-            border-radius: 8px;
-            margin: 10px 0;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-
         .btn-whatsapp {
             background: #25D366;
             margin-top: 10px;
@@ -391,11 +328,10 @@
 </head>
 <body>
     <div class="container">
-        <!-- BOTÃO PARA ÁREA DO ORGANIZADOR -->
         <a href="/login.html" class="btn-organizador">👤 Área do Organizador</a>
 
-        <h1 id="nomeRifa">🎫 MEGA RIFA PREMIUM</h1>
-        <div class="subtitle" id="descricaoRifa">🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆</div>
+        <h1 id="nomeRifa">🎫 Carregando...</h1>
+        <div class="subtitle" id="descricaoRifa"></div>
 
         <div id="ganhadorBanner"></div>
         <div id="imagemRifa" class="imagem-rifa"></div>
@@ -423,22 +359,18 @@
 
         <div class="form-area">
             <h3>📝 Finalizar Compra</h3>
-            
             <div class="form-group">
                 <label>Nome completo</label>
                 <input type="text" id="nome" placeholder="Digite seu nome completo">
             </div>
-            
             <div class="form-group">
                 <label>WhatsApp (com DDD)</label>
                 <input type="tel" id="telefone" placeholder="(11) 99999-9999">
             </div>
-            
             <div class="form-group">
                 <label>E-mail</label>
                 <input type="email" id="email" placeholder="seu@email.com">
             </div>
-            
             <button id="btnReservar" disabled>🔒 Reservar Número(s)</button>
         </div>
     </div>
@@ -457,99 +389,90 @@
                 <hr>
                 <div id="mensagensComprovante"></div>
             </div>
-            
             <p style="color: #f44336; font-weight: bold; font-size: 0.8em;">
                 ⚠️ APÓS O PAGAMENTO, ENVIE O COMPROVANTE!
             </p>
-            
             <button id="btnWhatsApp" class="btn-whatsapp">📱 Enviar via WhatsApp</button>
             <button onclick="fecharModal()" class="btn-fechar">Fechar</button>
         </div>
     </div>
 
     <script>
+        // PEGAR IDs DA URL
+        const pathParts = window.location.pathname.split('/');
+        const usuarioIdUrl = pathParts[2];
+        const rifaIdUrl = pathParts[3];
+
         let numeros = [];
         let numerosSelecionados = [];
         let configRifa = {};
         let rifaAtiva = true;
 
-        function carregarConfiguracoes() {
-            fetch('/api/configuracoes')
-                .then(res => res.json())
-                .then(config => {
-                    configRifa = config;
-                    document.getElementById('nomeRifa').textContent = `🎫 ${config.nome_rifa || 'MEGA RIFA PREMIUM'}`;
-                    document.getElementById('descricaoRifa').textContent = config.descricao_rifa || '🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆';
-                    
-                    if (config.rifa_ativa === 'false') {
-                        rifaAtiva = false;
-                        document.getElementById('btnReservar').disabled = true;
-                        document.getElementById('avisoBloqueio').innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada! Aguarde a próxima rifa.</div>';
-                    } else {
-                        if (!config.ultimo_ganhador || config.ultimo_ganhador === '') {
-                            document.getElementById('ganhadorBanner').innerHTML = '';
-                        }
-                    }
-                    
-                    if (config.imagem_rifa && config.imagem_rifa !== '') {
-                        document.getElementById('imagemRifa').innerHTML = `<img src="${config.imagem_rifa}" alt="Imagem da Rifa">`;
-                    }
-                    
-                    if (config.cor_principal) {
-                        const style = document.createElement('style');
-                        style.textContent = `
-                            .numero-item.disponivel { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
-                            .info-bar { background: ${config.cor_principal}; }
-                            button:not(.btn-whatsapp):not(.btn-fechar) { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
-                        `;
-                        document.head.appendChild(style);
-                    }
-                });
-        }
+        console.log('IDs da URL:', { usuarioIdUrl, rifaIdUrl });
 
-        function carregarUltimoSorteio() {
-            fetch('/api/ultimo-sorteio')
-                .then(res => res.json())
-                .then(sorteio => {
-                    if (sorteio && sorteio.numero && configRifa.rifa_ativa === 'false') {
+        async function carregarConfiguracoes() {
+            try {
+                const response = await fetch(`/api/public/rifa/${usuarioIdUrl}/${rifaIdUrl}`);
+                const config = await response.json();
+                console.log('Configurações carregadas:', config);
+                
+                configRifa = config;
+                document.getElementById('nomeRifa').textContent = `🎫 ${config.nome_rifa || config.nome || 'MEGA RIFA PREMIUM'}`;
+                document.getElementById('descricaoRifa').textContent = config.descricao_rifa || config.descricao || '🏆 Prêmio: R$ 10.000,00 + Moto 0km 🏆';
+                
+                if (config.status === 'finalizada' || config.rifa_ativa === 'false') {
+                    rifaAtiva = false;
+                    document.getElementById('btnReservar').disabled = true;
+                    document.getElementById('avisoBloqueio').innerHTML = '<div class="rifa-bloqueada">🔒 Esta rifa já foi finalizada! Aguarde a próxima rifa.</div>';
+                } else {
+                    if (!config.ultimo_ganhador || config.ultimo_ganhador === '') {
+                        document.getElementById('ganhadorBanner').innerHTML = '';
+                    } else {
                         document.getElementById('ganhadorBanner').innerHTML = `
                             <div class="ganhador-banner">
                                 🎉 ÚLTIMO GANHADOR! 🎉<br>
-                                <strong>Número ${sorteio.numero}</strong> - ${sorteio.ganhador_nome}<br>
-                                Sorteio em ${new Date(sorteio.data_sorteio).toLocaleDateString()}
+                                <strong>Número ${config.ultimo_ganhador_numero}</strong> - ${config.ultimo_ganhador}
                             </div>
                         `;
-                    } else {
-                        document.getElementById('ganhadorBanner').innerHTML = '';
                     }
-                });
-        }
-
-        function carregarNumeros() {
-            fetch('/api/numeros')
-                .then(res => res.json())
-                .then(data => {
-                    numeros = data.numeros;
-                    rifaAtiva = data.rifa_ativa;
-                    atualizarGrid();
-                    
-                    if (!rifaAtiva) {
-                        document.getElementById('btnReservar').disabled = true;
-                    }
-                    carregarUltimoSorteio();
-                });
+                }
+                
+                if (config.imagem_rifa && config.imagem_rifa !== '') {
+                    document.getElementById('imagemRifa').innerHTML = `<img src="${config.imagem_rifa}" alt="Imagem da Rifa">`;
+                }
+                
+                if (config.cor_principal) {
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        .numero-item.disponivel { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
+                        .info-bar { background: ${config.cor_principal}; }
+                        button:not(.btn-whatsapp):not(.btn-fechar) { background: linear-gradient(135deg, ${config.cor_principal}, ${config.cor_secundaria || '#764ba2'}); }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                numeros = config.numeros || [];
+                atualizarGrid();
+            } catch (error) {
+                console.error('Erro ao carregar configurações:', error);
+            }
         }
 
         function atualizarGrid() {
             const grid = document.getElementById('gridNumeros');
             grid.innerHTML = '';
             
+            if (!numeros || numeros.length === 0) {
+                grid.innerHTML = '<div style="text-align:center; padding:20px;">Carregando números...</div>';
+                return;
+            }
+            
             numeros.forEach(num => {
                 const div = document.createElement('div');
                 div.className = `numero-item ${num.status}`;
                 div.textContent = num.numero;
                 
-                if (num.status === 'disponivel' && rifaAtiva) {
+                if (num.status === 'disponivel' && rifaAtiva && configRifa.status === 'ativa') {
                     div.onclick = () => toggleSelecionarNumero(num.numero);
                 }
                 
@@ -573,7 +496,6 @@
             } else {
                 numerosSelecionados.splice(index, 1);
             }
-            
             atualizarInterface();
         }
 
@@ -593,7 +515,7 @@
             });
             
             const qtd = numerosSelecionados.length;
-            const valorUnitario = parseFloat(configRifa.valor_rifa || 10);
+            const valorUnitario = parseFloat(configRifa.valor_rifa || configRifa.valor || 10);
             const total = qtd * valorUnitario;
             
             document.getElementById('qtdSelecionados').textContent = qtd;
@@ -610,7 +532,7 @@
             }
         }
 
-        document.getElementById('btnReservar').onclick = () => {
+        document.getElementById('btnReservar').onclick = async () => {
             if (!rifaAtiva) {
                 alert('⚠️ Esta rifa já foi finalizada!');
                 return;
@@ -630,35 +552,41 @@
                 return;
             }
             
-            fetch('/api/reservar-multiplos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    numeros: numerosSelecionados,
-                    nome: nome,
-                    telefone: telefone,
-                    email: email
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
+            try {
+                const response = await fetch(`/api/public/rifa/${usuarioIdUrl}/${rifaIdUrl}/reservar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        numeros: numerosSelecionados,
+                        nome: nome,
+                        telefone: telefone,
+                        email: email
+                    })
+                });
+                
+                const data = await response.json();
+                console.log('Resposta reserva:', data);
+                
                 if (data.success) {
+                    // Preencher modal
                     document.getElementById('modalNomeRifa').textContent = data.nome_rifa || configRifa.nome_rifa;
                     document.getElementById('modalQuantidade').textContent = data.total_numeros;
                     document.getElementById('modalNumeros').textContent = data.numeros.map(n => n.numero).sort((a,b) => a-b).join(', ');
                     document.getElementById('modalValorTotal').textContent = data.valor_total.toFixed(2).replace('.', ',');
-                    document.getElementById('modalQR').innerHTML = `<img src="${data.numeros[0].qrCode}" style="width: 120px;"><br><small>Comprovante único</small>`;
+                    document.getElementById('modalQR').innerHTML = `<img src="${data.numeros[0].qrCode}" style="width: 120px;"><br><small>Comprovante único para todos os números</small>`;
                     
                     const codigoUnico = `RIFA-MULTI-${data.numeros[0].comprovante.split('-')[2]}`;
                     document.getElementById('modalCodigoUnico').textContent = codigoUnico;
-                    document.getElementById('modalPix').textContent = data.chave_pix;
+                    document.getElementById('modalPix').textContent = data.chave_pix || configRifa.chave_pix || 'Chave PIX do organizador';
                     
+                    // Mensagens personalizadas do comprovante
                     let mensagensHtml = '';
                     if (data.mensagem_boas_vindas) mensagensHtml += `<p>📢 ${data.mensagem_boas_vindas}</p>`;
                     if (data.instrucoes_pagamento) mensagensHtml += `<p>📝 ${data.instrucoes_pagamento.replace(/\n/g, '<br>')}</p>`;
                     if (data.rodape_comprovante) mensagensHtml += `<p>✨ ${data.rodape_comprovante.replace(/\n/g, '<br>')}</p>`;
                     document.getElementById('mensagensComprovante').innerHTML = mensagensHtml;
                     
+                    // Botão WhatsApp
                     const btnWhatsApp = document.getElementById('btnWhatsApp');
                     const adminWhatsApp = configRifa.admin_whatsapp || '55999999999';
                     
@@ -669,6 +597,7 @@
                         `*Números:* ${data.numeros.map(n => n.numero).sort((a,b) => a-b).join(', ')}%0A` +
                         `*Quantidade:* ${data.total_numeros} números%0A` +
                         `*Valor Total:* R$ ${data.valor_total.toFixed(2)}%0A%0A` +
+                        `✅ Código: ${codigoUnico}%0A%0A` +
                         `✅ Aguardando confirmação de pagamento!`;
                     
                     btnWhatsApp.onclick = () => {
@@ -677,30 +606,38 @@
                     
                     document.getElementById('modal').style.display = 'flex';
                     
+                    // Limpar formulário
                     document.getElementById('nome').value = '';
                     document.getElementById('telefone').value = '';
                     document.getElementById('email').value = '';
                     limparTudo();
                     
-                    carregarNumeros();
+                    // Recarregar números
+                    carregarConfiguracoes();
                 } else {
                     alert('❌ ' + data.error);
                     if (data.numero_indisponivel) {
-                        carregarNumeros();
+                        carregarConfiguracoes();
                         limparTudo();
                     }
                 }
-            });
+            } catch (error) {
+                console.error('Erro na reserva:', error);
+                alert('Erro ao fazer reserva. Tente novamente.');
+            }
         };
 
         function fecharModal() {
             document.getElementById('modal').style.display = 'none';
         }
 
-        carregarConfiguracoes();
-        carregarUltimoSorteio();
-        carregarNumeros();
-        setInterval(carregarNumeros, 5000);
+        // Inicializar
+        if (usuarioIdUrl && rifaIdUrl) {
+            carregarConfiguracoes();
+            setInterval(carregarConfiguracoes, 10000);
+        } else {
+            document.getElementById('gridNumeros').innerHTML = '<div style="text-align:center; padding:20px;">Link inválido. Verifique o endereço.</div>';
+        }
     </script>
 </body>
 </html>
