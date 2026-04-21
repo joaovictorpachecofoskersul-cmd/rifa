@@ -102,7 +102,7 @@
             max-width: 500px;
             width: 90%;
         }
-        .modal-content input, .modal-content textarea {
+        .modal-content input, .modal-content textarea, .modal-content select {
             width: 100%;
             padding: 10px;
             margin: 10px 0;
@@ -153,7 +153,23 @@
             <input type="text" id="nomeRifa" placeholder="Nome da Rifa">
             <textarea id="descricaoRifa" rows="2" placeholder="Descrição"></textarea>
             <input type="number" id="valorRifa" step="0.01" placeholder="Valor por número (R$)">
-            <textarea id="premioRifa" rows="2" placeholder="Prêmio"></textarea>
+            
+            <!-- OPÇÃO DE QUANTIDADE DE NÚMEROS -->
+            <label style="font-weight: bold;">Quantidade de números:</label>
+            <select id="qtdNumeros">
+                <option value="50">50 números</option>
+                <option value="100" selected>100 números</option>
+                <option value="150">150 números</option>
+                <option value="200">200 números</option>
+                <option value="250">250 números</option>
+                <option value="300">300 números</option>
+                <option value="350">350 números</option>
+                <option value="400">400 números</option>
+                <option value="450">450 números</option>
+                <option value="500">500 números</option>
+            </select>
+            
+            <textarea id="premioRifa" rows="2" placeholder="Prêmio (ex: R$ 10.000,00 + Moto 0km)"></textarea>
             <button onclick="criarRifa()">Criar Rifa</button>
             <button onclick="fecharModal()" style="background: #666;">Cancelar</button>
         </div>
@@ -183,6 +199,7 @@
             document.getElementById('nomeRifa').value = '';
             document.getElementById('descricaoRifa').value = '';
             document.getElementById('valorRifa').value = '';
+            document.getElementById('qtdNumeros').value = '100';
             document.getElementById('premioRifa').value = '';
         }
 
@@ -190,6 +207,7 @@
             const nome = document.getElementById('nomeRifa').value;
             const descricao = document.getElementById('descricaoRifa').value;
             const valor = parseFloat(document.getElementById('valorRifa').value);
+            const qtdNumeros = parseInt(document.getElementById('qtdNumeros').value);
             const premio = document.getElementById('premioRifa').value;
 
             if (!nome || !valor) {
@@ -197,18 +215,18 @@
                 return;
             }
 
-            const response = await fetch('/api/user/rifas/nova', {
+            const response = await fetch('/api/rifas/nova', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'user-token': usuarioId
                 },
-                body: JSON.stringify({ nome, descricao, valor, premio })
+                body: JSON.stringify({ nome, descricao, valor, qtdNumeros, premio })
             });
             const data = await response.json();
 
             if (data.success) {
-                alert('✅ Rifa criada!');
+                alert('✅ Rifa criada com ' + qtdNumeros + ' números!');
                 fecharModal();
                 carregarRifas();
             } else {
@@ -217,7 +235,7 @@
         }
 
         async function carregarRifas() {
-            const response = await fetch('/api/user/rifas', {
+            const response = await fetch('/api/rifas', {
                 headers: { 'user-token': usuarioId }
             });
             const rifas = await response.json();
@@ -230,11 +248,16 @@
 
             div.innerHTML = rifas.map(r => {
                 const link = `${window.location.origin}/rifa/${usuarioId}/${r.id}`;
+                const totalNumeros = r.total_numeros || 100;
+                const disponiveis = r.numeros ? r.numeros.filter(n => n.status === 'disponivel').length : totalNumeros;
+                const vendidos = r.numeros ? r.numeros.filter(n => n.status === 'pago').length : 0;
+                
                 return `
                     <div class="rifa-card">
                         <h3>🎫 ${r.nome}</h3>
                         <p>📝 ${r.descricao || 'Sem descrição'}</p>
-                        <p>💰 Valor: R$ ${r.valor.toFixed(2)}</p>
+                        <p>💰 Valor: R$ ${r.valor.toFixed(2)} | 🔢 Total: ${totalNumeros} números</p>
+                        <p>📊 Disponíveis: ${disponiveis} | Vendidos: ${vendidos}</p>
                         <p>🏆 ${r.premio || 'Prêmio não definido'}</p>
                         <p><span class="status-ativa ${r.status === 'finalizada' ? 'status-finalizada' : ''}">${r.status === 'ativa' ? 'ATIVA' : 'FINALIZADA'}</span></p>
                         <div class="link-area">
