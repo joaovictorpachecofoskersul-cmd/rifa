@@ -215,7 +215,9 @@
         return;
     }
 
-    const response = await fetch('/api/rifas/nova', {
+    console.log('Enviando:', { nome, descricao, valor, qtdNumeros, premio }); // DEBUG
+
+    const response = await fetch('/api/user/rifas/nova', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -225,11 +227,13 @@
             nome, 
             descricao, 
             valor, 
-            qtdNumeros,   // ← CAMPO IMPORTANTE
+            qtdNumeros, 
             premio 
         })
     });
+    
     const data = await response.json();
+    console.log('Resposta:', data); // DEBUG
 
     if (data.success) {
         alert('✅ Rifa criada com ' + qtdNumeros + ' números!');
