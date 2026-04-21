@@ -7,7 +7,23 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const mysql = require('mysql2/promise');
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const { v4: uuidv4 } = require('uuid');
+const QRCode = require('qrcode');
+const path = require('path');
+const fs = require('fs');
+const bcrypt = require('bcryptjs');
+const mysql = require('mysql2/promise');
+const dataManager = require('./dataManager');  // ← ADICIONE ESTA LINHA AQUI
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, 'views')));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -157,23 +173,17 @@ if (!fs.existsSync(USUARIOS_DIR)) fs.mkdirSync(USUARIOS_DIR);
 if (!fs.existsSync(RIFAS_DIR)) fs.mkdirSync(RIFAS_DIR);
 
 // ============================================
-// FUNÇÕES DE USUÁRIOS
+// FUNÇÕES DE USUÁRIOS (COM DATA MANAGER)
 // ============================================
 
 function carregarUsuarios() {
-    const usuariosFile = path.join(USUARIOS_DIR, 'lista.json');
-    try {
-        if (fs.existsSync(usuariosFile)) {
-            return JSON.parse(fs.readFileSync(usuariosFile, 'utf8'));
-        }
-    } catch(e) {}
-    return [];
+    return dataManager.loadUsers();
 }
 
 function salvarUsuarios(usuarios) {
-    const usuariosFile = path.join(USUARIOS_DIR, 'lista.json');
-    fs.writeFileSync(usuariosFile, JSON.stringify(usuarios, null, 2));
+    return dataManager.saveUsers(usuarios);
 }
+
 
 async function salvarUsuarioMySQL(usuario) {
     if (!pool) {
@@ -257,46 +267,19 @@ function getUsuarioById(usuarioId) {
 }
 
 // ============================================
-// FUNÇÕES DE RIFAS
+// FUNÇÕES DE RIFAS (COM DATA MANAGER)
 // ============================================
 
-function getRifaPath(usuarioId, rifaId = null) {
-    const userDir = path.join(RIFAS_DIR, usuarioId);
-    if (!fs.existsSync(userDir)) fs.mkdirSync(userDir);
-    if (rifaId) {
-        return path.join(userDir, `${rifaId}.json`);
-    }
-    return userDir;
-}
-
 function carregarRifas(usuarioId) {
-    const userDir = getRifaPath(usuarioId);
-    const rifas = [];
-    try {
-        const files = fs.readdirSync(userDir);
-        for (const file of files) {
-            if (file.endsWith('.json')) {
-                const rifaData = JSON.parse(fs.readFileSync(path.join(userDir, file), 'utf8'));
-                rifas.push(rifaData);
-            }
-        }
-    } catch(e) {}
-    return rifas;
+    return dataManager.loadAllRifas(usuarioId);
 }
 
 function carregarRifa(usuarioId, rifaId) {
-    const rifaPath = getRifaPath(usuarioId, rifaId);
-    try {
-        if (fs.existsSync(rifaPath)) {
-            return JSON.parse(fs.readFileSync(rifaPath, 'utf8'));
-        }
-    } catch(e) {}
-    return null;
+    return dataManager.loadRifa(usuarioId, rifaId);
 }
 
 function salvarRifa(usuarioId, rifaId, data) {
-    const rifaPath = getRifaPath(usuarioId, rifaId);
-    fs.writeFileSync(rifaPath, JSON.stringify(data, null, 2));
+    return dataManager.saveRifa(usuarioId, rifaId, data);
 }
 
 function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio) {
