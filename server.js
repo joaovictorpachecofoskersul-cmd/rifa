@@ -225,45 +225,57 @@ function criarNovaRifa(usuarioId, nomeRifa, descricao, valor, qtdNumeros, premio
 // ============================================
 async function gerarQRCodePix(chavePix, nomeRecebedor, cidade, valor, descricao = 'Pagamento Rifa') {
     try {
-        // Limpar chave PIX (remover espaços, traços, etc)
+        // Limpar chave PIX (remover espaços, traços, pontos)
         const chaveLimpa = chavePix.replace(/\s+/g, '').replace(/[-\.]/g, '');
         
-        // Formatar valor para o padrão do PIX (sem ponto, 2 casas decimais)
+        // Formatar valor (2 casas decimais, sem ponto)
         const valorFormatado = valor.toFixed(2).replace('.', '');
         
-        // Identificar tipo da chave PIX
-        let chaveTipo = '';
-        let chaveValor = chaveLimpa;
+        // Limitar tamanho dos campos (exigência do PIX)
+        const nomeLimpo = nomeRecebedor.substring(0, 25).toUpperCase();
+        const cidadeLimpa = cidade.substring(0, 15).toUpperCase();
         
-        if (chaveLimpa.match(/^\d{11}$/)) {
-            chaveTipo = 'CPF';
-        } else if (chaveLimpa.match(/^\d{14}$/)) {
-            chaveTipo = 'CNPJ';
-        } else if (chaveLimpa.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
-            chaveTipo = 'EMAIL';
-        } else if (chaveLimpa.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i)) {
-            chaveTipo = 'UUID';
-        } else if (chaveLimpa.match(/^\d{10,11}$/)) {
-            chaveTipo = 'TELEFONE';
-        } else {
-            chaveTipo = 'CHAVE';
+        // INÍCIO DO PAYLOAD PIX (formato BR Code)
+        let payload = '';
+        
+        // 1. Payload Format Indicator (00)
+        payload += '000201';
+        
+        // 2. Merchant Account Information (26)
+        // 2.1 GUI (00)
+        let gui = '0014BR.GOV.BCB.PIX';
+        // 2.2 Chave PIX (01) - com tamanho correto
+        let chavePayload = `01${String(chaveLimpa.length).padStart(2, '0')}${chaveLimpa}`;
+        // 2.3 Merchant Account Information completa
+        let mpi = gui + chavePayload;
+        payload += `26${String(mpi.length).padStart(2, '0')}${mpi}`;
+        
+        // 3. Merchant Category Code (52) - fixo 0000
+        payload += '52040000';
+        
+        // 4. Transaction Currency (53) - 986 = BRL
+        payload += '5303986';
+        
+        // 5. Transaction Amount (54) - só inclui se tiver valor
+        if (valor > 0) {
+            payload += `54${String(valorFormatado.length).padStart(2, '0')}${valorFormatado}`;
         }
         
-        // Montar payload PIX conforme padrão BR Code
-        let payload = '000201'; // Payload Format Indicator
-        payload += '010211'; // Merchant Account Information - GUI
-        payload += '2633'; // Merchant Account Information - Length
-        payload += '0014BR.GOV.BCB.PIX'; // DOM
-        payload += `01${String(chaveLimpa.length).padStart(2, '0')}${chaveLimpa}`; // Chave PIX
-        payload += '52040000'; // Merchant Category Code
-        payload += '5303986'; // Transaction Currency - BRL
-        payload += `54${String(valorFormatado.length).padStart(2, '0')}${valorFormatado}`; // Transaction Amount
-        payload += '5802BR'; // Country Code
-        payload += `59${String(nomeRecebedor.length).padStart(2, '0')}${nomeRecebedor}`; // Merchant Name
-        payload += `60${String(cidade.length).padStart(2, '0')}${cidade}`; // Merchant City
-        payload += `62${String(descricao.length + 4).padStart(2, '0')}05${String(descricao.length).padStart(2, '0')}${descricao}`; // Additional Data Field
+        // 6. Country Code (58) - BR
+        payload += '5802BR';
         
-        // Calcular CRC16
+        // 7. Merchant Name (59)
+        payload += `59${String(nomeLimpo.length).padStart(2, '0')}${nomeLimpo}`;
+        
+        // 8. Merchant City (60)
+        payload += `60${String(cidadeLimpa.length).padStart(2, '0')}${cidadeLimpa}`;
+        
+        // 9. Additional Data Field (62) - opcional
+        let txid = `RIFA${Date.now()}`.substring(0, 25);
+        let additionalData = `05${String(txid.length).padStart(2, '0')}${txid}`;
+        payload += `62${String(additionalData.length).padStart(2, '0')}${additionalData}`;
+        
+        // 10. CRC16 (63) - será calculado
         const crc16 = (str) => {
             let crc = 0xFFFF;
             for (let i = 0; i < str.length; i++) {
@@ -278,20 +290,32 @@ async function gerarQRCodePix(chavePix, nomeRecebedor, cidade, valor, descricao 
         const crc = crc16(payload + '6304');
         const payloadCompleto = payload + '6304' + crc;
         
-        // Gerar QR Code
-        return await QRCode.toDataURL(payloadCompleto, {
-            errorCorrectionLevel: 'M',
-            margin: 2,
-            width: 250,
-            color: { dark: '#000000', light: '#ffffff' }
+        console.log('Payload PIX gerado (tamanho):', payloadCompleto.length);
+        console.log('Payload PIX (primeiros 100 chars):', payloadCompleto.substring(0, 100));
+        
+        // Gerar QR Code com configurações otimizadas
+        const qrCode = await QRCode.toDataURL(payloadCompleto, {
+            errorCorrectionLevel: 'H', // High para melhor escaneabilidade
+            margin: 4, // Margem maior
+            width: 300,
+            color: {
+                dark: '#000000',
+                light: '#FFFFFF'
+            }
         });
+        
+        return qrCode;
+        
     } catch (error) {
         console.error('Erro ao gerar QR Code PIX:', error);
-        // Retornar QR Code com texto simples como fallback
-        return await QRCode.toDataURL(`Chave PIX: ${chavePix}\nValor: R$ ${valor.toFixed(2)}`, {
-            errorCorrectionLevel: 'M',
+        // Fallback: gerar QR Code com URL de pagamento
+        const valorStr = valor.toFixed(2).replace('.', ',');
+        const textoAlternativo = `Chave PIX: ${chavePix}\nValor: R$ ${valorStr}\nNome: ${nomeRecebedor}`;
+        
+        return await QRCode.toDataURL(textoAlternativo, {
+            errorCorrectionLevel: 'H',
             margin: 2,
-            width: 250
+            width: 300
         });
     }
 }
