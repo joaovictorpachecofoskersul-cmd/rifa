@@ -19,7 +19,7 @@ app.use(express.static(path.join(__dirname, 'views')));
 // CONEXÃO COM MySQL (COM SEU USUÁRIO)
 // ============================================
 const dbConfig = {
-    host: 'localhost',
+    host: '127.0.0.1',
     user: 'u519611382_rifa',           // SEU USUÁRIO
     password: '21@Joao21',                       // VOCÊ COLOCA A SENHA
     database: 'u519611382_rifa',       // SEU BANCO
