@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Master - RifaOnline</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1a1a2e;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        .stat-card h3 { font-size: 2em; color: #667eea; }
+        .usuario-card {
+            background: white;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .usuario-header {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+        .rifas-list { padding: 15px; display: none; }
+        .rifas-list.show { display: block; }
+        .rifa-item {
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .btn-logout {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .badge-ativa { background: #4caf50; color: white; padding: 4px 8px; border-radius: 5px; font-size: 0.8em; }
+        .badge-finalizada { background: #f44336; color: white; padding: 4px 8px; border-radius: 5px; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👑 Painel Master - RifaOnline</h1>
+            <button class="btn-logout" onclick="logout()">Sair</button>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card"><h3 id="totalUsuarios">-</h3><p>Organizadores</p></div>
+            <div class="stat-card"><h3 id="totalRifas">-</h3><p>Total de Rifas</p></div>
+            <div class="stat-card"><h3 id="totalVendas">-</h3><p>Números Vendidos</p></div>
+            <div class="stat-card"><h3 id="totalArrecadado">-</h3><p>Total Arrecadado</p></div>
+        </div>
+
+        <div id="usuarios"></div>
+    </div>
+
+    <script>
+        const ADMIN_TOKEN = 'admin123';
+
+        async function carregarDados() {
+            try {
+                const response = await fetch('/api/master/usuarios', {
+                    headers: { 'admin-token': ADMIN_TOKEN }
+                });
+                const usuarios = await response.json();
+                
+                let totalRifas = 0;
+                let totalVendas = 0;
+                let totalArrecadado = 0;
+                
+                let html = '';
+                for (const usuario of usuarios) {
+                    // Carregar rifas do usuário
+                    const rifasRes = await fetch(`/api/master/usuario/${usuario.id}/rifas`, {
+                        headers: { 'admin-token': ADMIN_TOKEN }
+                    });
+                    const rifas = await rifasRes.json();
+                    
+                    totalRifas += rifas.length;
+                    
+                    for (const rifa of rifas) {
+                        totalVendas += rifa.vendas?.filter(v => v.status_pagamento === 'confirmado').length || 0;
+                        totalArrecadado += rifa.vendas?.filter(v => v.status_pagamento === 'confirmado').reduce((sum, v) => sum + v.valor_pago, 0) || 0;
+                    }
+                    
+                    html += `
+                        <div class="usuario-card">
+                            <div class="usuario-header" onclick="toggleRifas('${usuario.id}')">
+                                <span>📱 ${usuario.empresa || usuario.nome}</span>
+                                <span>📧 ${usuario.email}</span>
+                                <span>🎫 ${rifas.length} rifas</span>
+                                <span>📅 ${new Date(usuario.data_criacao).toLocaleDateString()}</span>
+                            </div>
+                            <div class="rifas-list" id="rifas-${usuario.id}">
+                                <table>
+                                    <thead><tr><th>Rifa</th><th>Status</th><th>Números</th><th>Vendidos</th><th>Arrecadado</th></thead>
+                                    <tbody>
+                    `;
+                    for (const rifa of rifas) {
+                        const vendidos = rifa.numeros?.filter(n => n.status === 'pago').length || 0;
+                        const arrecadado = rifa.vendas?.filter(v => v.status_pagamento === 'confirmado').reduce((sum, v) => sum + v.valor_pago, 0) || 0;
+                        html += `
+                            <tr>
+                                <td>${rifa.nome}</td>
+                                <td><span class="badge-${rifa.status === 'ativa' ? 'ativa' : 'finalizada'}">${rifa.status === 'ativa' ? '🟢 Ativa' : '🔴 Encerrada'}</span></td>
+                                <td>${rifa.total_numeros || 0}</td>
+                                <td>${vendidos}</td>
+                                <td>R$ ${arrecadado.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    }
+                    html += `</tbody></table></div></div>`;
+                }
+                
+                document.getElementById('totalUsuarios').textContent = usuarios.length;
+                document.getElementById('totalRifas').textContent = totalRifas;
+                document.getElementById('totalVendas').textContent = totalVendas;
+                document.getElementById('totalArrecadado').textContent = `R$ ${totalArrecadado.toFixed(2)}`;
+                document.getElementById('usuarios').innerHTML = html;
+                
+            } catch (error) {
+                console.error('Erro:', error);
+                document.getElementById('usuarios').innerHTML = '<p style="color:white;">Erro ao carregar dados. Verifique se você está logado como admin.</p>';
+            }
+        }
+        
+        function toggleRifas(id) {
+            const el = document.getElementById(`rifas-${id}`);
+            el.classList.toggle('show');
+        }
+        
+        function logout() {
+            window.location.href = '/admin';
+        }
+        
+        // Verificar se é admin
+        const adminToken = localStorage.getItem('adminToken');
+        if (adminToken === ADMIN_TOKEN) {
+            carregarDados();
+            setInterval(carregarDados, 30000);
+        } else {
+            // Pedir senha
+            const senha = prompt('Digite a senha master:');
+            if (senha === ADMIN_TOKEN) {
+                localStorage.setItem('adminToken', senha);
+                carregarDados();
+                setInterval(carregarDados, 30000);
+            } else {
+                alert('Senha incorreta!');
+                window.location.href = '/';
+            }
+        }
+    </script>
+</body>
+</html>
